@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="it"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Diario dell'Avvento</title>
+<style>
+:root{--bg:#f6f1e7;--card:#fff;--ink:#2b2b2b;--acc:#1f6f43;--mut:#777}
+@media(prefers-color-scheme:dark){:root{--bg:#1c1f1d;--card:#262a27;--ink:#eee;--acc:#4fb67f;--mut:#aaa}}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+main{max-width:640px;margin:auto;padding:16px}
+.card{background:var(--card);border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea,button{font:inherit;width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #8885;background:var(--card);color:var(--ink)}
+button{background:var(--acc);color:#fff;border:0;cursor:pointer}button.sec{background:#8884;color:var(--ink)}
+.row{display:flex;gap:8px}.row>*{width:auto;flex:1}
+.mut{color:var(--mut);font-size:.85rem}
+img,video{max-width:100%;border-radius:10px;margin-top:8px}
+.modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
+.modal .card{max-width:480px;width:100%;max-height:90vh;overflow:auto}
+.re{width:auto;padding:4px 10px;background:#8883;color:var(--ink)}.re.on{background:var(--acc);color:#fff}
+</style></head><body><main id="app"></main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL='https://gqmcbijcsfnbqilakllc.supabase.co/rest/v1/', SUPABASE_KEY='sb_publishable_kzsguWJl6T7LdeO4rjjQ4w_RwLklx2a';
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const START='2026-11-30', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
+const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
+const $=s=>document.querySelector(s), app=$('#app');
+const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let me, session, challenge, myPost, viewDay=today;
+
+async function init(){
+  ({data:{session}}=await sb.auth.getSession());
+  if(!session) return loginView();
+  const {data}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  me=data; me?mainView():onboardView();
+}
+sb.auth.onAuthStateChange((e)=>{if(e==='SIGNED_IN'&&!session)init()});
+
+function loginView(){
+  app.innerHTML=`<div class="card"><h2>📖 Diario dell'Avvento</h2>
+  <p>Inserisci la tua email: ti arriverà un link per entrare.</p>
+  <input id="em" type="email" placeholder="email"><button id="go">Invia link</button><p id="msg" class="mut"></p></div>`;
+  $('#go').onclick=async()=>{
+    const {error}=await sb.auth.signInWithOtp({email:$('#em').value.trim(),options:{emailRedirectTo:location.href.split('#')[0]}});
+    $('#msg').textContent=error?error.message:'Controlla la tua email e clicca sul link.';
+  };
+}
+
+function onboardView(){
+  app.innerHTML=`<div class="card"><h2>Benvenuto!</h2>
+  <input id="nick" placeholder="Nickname" maxlength="20">
+  <select id="br"><option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option>
+  <option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option></select>
+  <button id="ok">Entra</button><p id="msg" class="mut"></p></div>`;
+  $('#ok').onclick=async()=>{
+    const nickname=$('#nick').value.trim(), branca=$('#br').value;
+    if(!nickname||!branca) return $('#msg').textContent='Compila tutti i campi.';
+    const {error}=await sb.from('profiles').insert({id:session.user.id,nickname,branca});
+    if(error) return $('#msg').textContent=error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
+    init();
+  };
+}
+
+async function mainView(){
+  const inRange=today>=START&&today<=END;
+  app.innerHTML=`<div class="row"><b style="align-self:center">👋 ${esc(me.nickname)} <span class="mut">(${esc(me.branca)})</span></b>
+  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="body"></div>`;
+  $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
+  if(me.is_admin) $('#adm').onclick=adminView;
+  if(!inRange){ $('#body').innerHTML='<div class="card">Le sfide partono il 30 novembre e finiscono il 25 dicembre. A presto! 🎄</div>'; return; }
+  const c=await sb.from('challenges').select('*').eq('day',today).maybeSingle(); challenge=c.data;
+  const p=await sb.from('posts').select('id').eq('day',today).eq('user_id',me.id).maybeSingle(); myPost=p.data;
+  if(!challenge){ $('#body').innerHTML='<div class="card">Oggi non c\'è ancora una sfida.</div>'; return; }
+  if(!myPost){ $('#body').innerHTML=`<div class="card"><b>Completa la sfida per vedere i post degli altri</b>
+    <button id="open">Apri la sfida di oggi</button></div>`; $('#open').onclick=challengeModal; challengeModal(); }
+  else loadFeed(today);
+}
+
+function challengeModal(){
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="card"><h3>🎯 ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
+  <textarea id="tx" rows="4" placeholder="Racconta la tua attività..."></textarea>
+  <input id="fl" type="file" accept="image/*,video/*">
+  <div class="row"><button class="sec" id="cl">Chiudi</button><button id="sd">Pubblica</button></div><p id="msg" class="mut"></p></div>`;
+  document.body.appendChild(m); $('#cl').onclick=()=>m.remove();
+  $('#sd').onclick=async()=>{
+    const text=$('#tx').value.trim(), f=$('#fl').files[0], msg=$('#msg');
+    if(!text&&!f) return msg.textContent='Aggiungi un testo, una foto o un video.';
+    msg.textContent='Caricamento in corso...'; let media_path=null, media_type=null;
+    if(f){
+      media_type=f.type.startsWith('video')?'video':'image';
+      media_path=`${me.id}/${today}-${Date.now()}.${f.name.split('.').pop()}`;
+      const u=await sb.storage.from('media').upload(media_path,f);
+      if(u.error) return msg.textContent='Errore upload: '+u.error.message;
+    }
+    const {error}=await sb.from('posts').insert({user_id:me.id,day:today,text_content:text||null,media_path,media_type});
+    if(error) return msg.textContent=error.message;
+    m.remove(); mainView();
+  };
+}
+
+async function loadFeed(day,sel='#body'){
+  const box=$(sel); box.innerHTML='<p class="mut">Carico...</p>';
+  const {data:posts,error}=await sb.from('posts')
+    .select('*,profiles(nickname,branca),comments(id,text_content,profiles(nickname)),reactions(emoji,user_id)')
+    .eq('day',day).order('created_at',{ascending:false});
+  if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
+  const paths=posts.map(p=>p.media_path).filter(Boolean), urls={};
+  if(paths.length){const s=await sb.storage.from('media').createSignedUrls(paths,3600); (s.data||[]).forEach(x=>urls[x.path]=x.signedUrl);}
+  box.innerHTML=(posts.length?'':'<div class="card">Ancora nessun post.</div>')+posts.map(p=>{
+    const media=!p.media_path?'':p.media_type==='video'?`<video src="${urls[p.media_path]}" controls></video>`:`<img src="${urls[p.media_path]}" loading="lazy">`;
+    const re=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).length,on=p.reactions.some(r=>r.emoji===e&&r.user_id===me.id);
+      return `<button class="re ${on?'on':''}" data-p="${p.id}" data-e="${e}" data-on="${on}">${e} ${n||''}</button>`}).join(' ');
+    const cm=p.comments.map(c=>`<p><b>${esc(c.profiles?.nickname)}</b>: ${esc(c.text_content)}</p>`).join('');
+    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}</span>
+      <p>${esc(p.text_content)}</p>${media}<div style="margin-top:8px">${re}</div>${cm}
+      <div class="row"><input placeholder="Commenta..." maxlength="500" id="c${p.id}"><button data-c="${p.id}">Invia</button></div></div>`}).join('');
+  box.querySelectorAll('.re').forEach(b=>b.onclick=async()=>{
+    const q=sb.from('reactions'); b.dataset.on==='true'
+      ? await q.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
+      : await q.insert({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e});
+    loadFeed(day,sel)});
+  box.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{
+    const t=$('#c'+b.dataset.c).value.trim(); if(!t) return;
+    await sb.from('comments').insert({post_id:b.dataset.c,user_id:me.id,text_content:t}); loadFeed(day,sel)});
+}
+
+function adminView(){
+  $('#body').innerHTML=`<div class="card"><b>Archivio admin</b><input type="date" id="dd" min="${START}" max="${END}" value="${today}"></div><div id="fd"></div>`;
+  $('#dd').onchange=()=>loadFeed($('#dd').value,'#fd'); loadFeed(today,'#fd');
+}
+init();
+</script></body></html>
