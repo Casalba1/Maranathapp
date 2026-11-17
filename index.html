@@ -120,7 +120,7 @@ function challengeModal(){
 async function loadFeed(day,sel='#body'){
   const box=$(sel); box.innerHTML='<p class="mut">Carico...</p>';
   const {data:posts,error}=await sb.from('posts')
-    .select('*,profiles(nickname,branca),comments(id,text_content,profiles(nickname)),reactions(emoji,user_id)')
+    .select('*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id)')
     .eq('day',day).order('created_at',{ascending:false});
   if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
   const paths=posts.map(p=>p.media_path).filter(Boolean), urls={};
