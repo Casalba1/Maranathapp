@@ -112,10 +112,11 @@ function onboardView(){
 async function mainView(){
   const inRange=today>=START&&today<=END;
   app.innerHTML=`<div class="row top"><b style="align-self:center">👋 ${esc(me.nickname)} <span class="mut">(${esc(me.branca)})</span></b>
-  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="body"></div>`;
+  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
   $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
+  loadMyFiles(); countdown();
   if(me.is_admin) $('#adm').onclick=adminView;
-  if(!inRange){ $('#body').innerHTML='<div class="card">Le sfide partono il 30 novembre e finiscono il 25 dicembre. A presto! 🎄</div>'; return; }
+  if(!inRange){ $('#body').innerHTML=(today>END?'<div class="card">Le sfide sono concluse: grazie per aver partecipato! 🎄</div>':'<div class="card">Le sfide partono il 30 novembre e finiscono il 25 dicembre. A presto! 🎄</div>'); return; }
   const c=await sb.from('challenges').select('*').eq('day',today).maybeSingle(); challenge=c.data;
   const p=await sb.from('posts').select('id').eq('day',today).eq('user_id',me.id).maybeSingle(); myPost=p.data;
   if(!challenge){ $('#body').innerHTML='<div class="card">Oggi non c\'è ancora una sfida.</div>'; return; }
@@ -218,14 +219,116 @@ async function loadFeed(day,sel='#body',uid=null){
   };
 }
 
+const CD_START=new Date('2026-12-26T00:00:00+01:00'), UNLOCK=new Date('2026-12-31T00:00:00+01:00');
+let cdTimer;
+function countdown(){
+  clearInterval(cdTimer); const box=$('#cd'); if(!box) return;
+  const tick=()=>{
+    const now=Date.now(), ms=UNLOCK-now;
+    if(now<CD_START){box.innerHTML='';return;}
+    if(ms<=0){box.innerHTML='';clearInterval(cdTimer);loadMyFiles();return;}
+    const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3), p=n=>String(n).padStart(2,'0');
+    box.innerHTML=`<div class="card" style="text-align:center"><b>🎁 Manca poco al tuo regalo!</b><div style="font-size:1.8rem;font-weight:700;margin:6px 0">${d}g ${p(h)}:${p(m)}:${p(sc)}</div><span class="mut">Il file riservato a te si apre a mezzanotte del 31 dicembre</span></div>`;
+  };
+  tick(); cdTimer=setInterval(tick,1000);
+}
+function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),10000);}
+const BRANCHE=['lupetti','esploratori','rover','capi'];
+async function recapView(){
+  const y=new Date(Date.now()-864e5).toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
+  $('#adm').innerHTML=`<div class="card"><b>📁 Recap giornalieri</b>
+  <p class="mut">Ogni notte a mezzanotte l'app prepara da sola il recap del giorno appena finito, diviso per branca.</p>
+  <input type="date" id="rd" value="${y}"><div class="row"><button class="sec" id="rg">Genera ora</button><button id="rz">⬇️ ZIP del giorno</button></div>
+  <button id="ra">⬇️ ZIP di tutti i giorni</button><p id="rmsg" class="mut"></p></div><div id="rlist"></div>`;
+  let rows=[];
+  const load=async()=>{
+    const {data,error}=await sb.from('recaps').select('*').eq('day',$('#rd').value).order('nickname');
+    if(error) return $('#rlist').innerHTML=`<div class="card">${esc(error.message)}</div>`;
+    rows=data||[];
+    $('#rlist').innerHTML=rows.length?BRANCHE.map(b=>{const r=rows.filter(x=>x.branca===b);
+      return r.length?`<div class="card"><b>📁 ${b} (${r.length})</b>${r.map(x=>`<details><summary>${esc(x.nickname)}</summary><pre style="white-space:pre-wrap;font:inherit">${esc(x.content)}</pre></details>`).join('')}</div>`:'';}).join('')
+      :'<div class="card">Nessun recap per questo giorno. Premi "Genera ora" per prepararlo subito.</div>';
+  };
+  const zip=async(list,name)=>{
+    const m=$('#rmsg'); if(!window.JSZip) return m.textContent='Libreria ZIP non caricata: ricarica la pagina.';
+    if(!list.length) return m.textContent='Nessun recap da scaricare.';
+    const z=new JSZip(); list.forEach(r=>z.file(`${r.branca}/${r.nickname}/${r.day}.txt`,r.content));
+    saveBlob(await z.generateAsync({type:'blob'}),name); m.textContent='Download avviato ✅';
+  };
+  $('#rd').onchange=load;
+  $('#rg').onclick=async()=>{$('#rmsg').textContent='Preparo il recap...';
+    const {error}=await sb.rpc('genera_recap_admin',{d:$('#rd').value}); $('#rmsg').textContent=error?error.message:'Recap pronto ✅'; load();};
+  $('#rz').onclick=()=>zip(rows,`recap_${$('#rd').value}.zip`);
+  $('#ra').onclick=async()=>{
+    $('#rmsg').textContent='Raccolgo tutti i recap...'; let all=[],from=0;
+    for(;;){const {data,error}=await sb.from('recaps').select('*').order('day').range(from,from+999);
+      if(error) return $('#rmsg').textContent=error.message; all=all.concat(data); if(data.length<1000) break; from+=1000;}
+    zip(all,'recap_tutti_i_giorni.zip');};
+  load();
+}
+function openFile(path,name,dl){
+  const w=dl?null:window.open('','_blank');
+  sb.storage.from('riservati').createSignedUrl(path,3600,dl?{download:name}:undefined).then(({data,error})=>{
+    if(error){w&&w.close();return alert('Impossibile aprire il file.');}
+    if(dl||!w) location.href=data.signedUrl; else w.location=data.signedUrl;
+  });
+}
+const fileBtns=(i)=>`<button class="sec" data-o="${i}" style="width:auto">Apri</button> <button class="sec" data-d="${i}" style="width:auto">⬇️ Scarica</button>`;
+function bindFiles(box,rows){
+  box.querySelectorAll('[data-o]').forEach(b=>b.onclick=()=>{const f=rows[b.dataset.o];openFile(f.file_path,f.file_name,false)});
+  box.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>{const f=rows[b.dataset.d];openFile(f.file_path,f.file_name,true)});
+}
+async function loadMyFiles(){
+  const {data}=await sb.from('user_files').select('*').eq('user_id',me.id).order('created_at',{ascending:false});
+  const box=$('#files'); if(!box) return;
+  if(!data||!data.length){box.innerHTML='';return;}
+  box.innerHTML=`<div class="card"><b>📎 File per te</b>${data.map((f,i)=>`<p>${esc(f.file_name)}${f.note?`<br><span class="mut">${esc(f.note)}</span>`:''}<br>${fileBtns(i)}</p>`).join('')}</div>`;
+  bindFiles(box,data);
+}
+
 async function adminView(){
   const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
-  $('#body').innerHTML=`<div class="card"><b>Archivio admin</b>
+  const u=users||[];
+  $('#body').innerHTML=`<div class="row"><button class="sec" id="t1">📚 Archivio</button><button class="sec" id="t2">📎 File riservati</button><button class="sec" id="t3">📁 Recap</button></div><div id="adm"></div>`;
+  $('#t1').onclick=()=>archivio(u); $('#t2').onclick=()=>riservati(u); $('#t3').onclick=recapView; archivio(u);
+}
+function archivio(users){
+  $('#adm').innerHTML=`<div class="card"><b>Archivio admin</b>
   <label class="mut">Post di un giorno</label><input type="date" id="dd" min="${START}" max="${END}" value="${today}">
-  <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${(users||[]).map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
+  <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
   $('#dd').onchange=()=>{$('#us').value='';loadFeed($('#dd').value,'#fd');};
   $('#us').onchange=()=>{const v=$('#us').value; v?loadFeed(null,'#fd',v):loadFeed($('#dd').value,'#fd');};
   loadFeed(today,'#fd');
+}
+async function riservati(users){
+  $('#adm').innerHTML=`<div class="card"><b>📎 Invia un file a un utente</b>
+  <p class="mut">Solo il destinatario (e gli admin) potrà vederlo e scaricarlo. Massimo 50 MB.</p>
+  <select id="ru"><option value="">Scegli il destinatario</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select>
+  <input id="rf" type="file"><input id="rn" placeholder="Nota (facoltativa)" maxlength="200">
+  <button id="rs">Invia</button><p id="rm" class="mut"></p></div><div id="rl"></div>`;
+  let rows=[];
+  const list=async()=>{
+    const {data}=await sb.from('user_files').select('*,profiles!user_files_user_id_fkey(nickname)').order('created_at',{ascending:false});
+    rows=data||[]; const box=$('#rl');
+    box.innerHTML=`<div class="card"><b>File inviati</b>${rows.length?rows.map((f,i)=>`<p><b>${esc(f.profiles?.nickname)}</b> · ${esc(f.file_name)}<span class="mut"> · ${new Date(f.created_at).toLocaleDateString('it-IT')}</span>${f.note?`<br><span class="mut">${esc(f.note)}</span>`:''}<br>${fileBtns(i)} <button class="sec" data-x="${i}" style="width:auto">🗑️ Elimina</button></p>`).join(''):'<p class="mut">Nessun file inviato.</p>'}</div>`;
+    bindFiles(box,rows);
+    box.querySelectorAll('[data-x]').forEach(b=>b.onclick=async()=>{
+      const f=rows[b.dataset.x]; if(!confirm('Eliminare "'+f.file_name+'"?')) return;
+      await sb.storage.from('riservati').remove([f.file_path]); await sb.from('user_files').delete().eq('id',f.id); list();});
+  };
+  $('#rs').onclick=async()=>{
+    const uid=$('#ru').value, f=$('#rf').files[0], note=$('#rn').value.trim(), m=$('#rm');
+    if(!uid||!f) return m.textContent='Scegli il destinatario e un file.';
+    m.textContent='Caricamento in corso...';
+    const safe=f.name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]+/g,'_');
+    const path=`${uid}/${Date.now()}_${safe}`;
+    const up=await sb.storage.from('riservati').upload(path,f);
+    if(up.error) return m.textContent='Errore upload: '+up.error.message;
+    const ins=await sb.from('user_files').insert({user_id:uid,file_path:path,file_name:f.name,note:note||null});
+    if(ins.error){await sb.storage.from('riservati').remove([path]);return m.textContent=ins.error.message;}
+    m.textContent='File inviato ✅'; $('#rf').value=''; $('#rn').value=''; list();
+  };
+  list();
 }
 init();
 </script></body></html>
