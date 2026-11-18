@@ -33,7 +33,7 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 <script>
 const SUPABASE_URL='https://gqmcbijcsfnbqilakllc.supabase.co', SUPABASE_KEY='sb_publishable_kzsguWJl6T7LdeO4rjjQ4w_RwLklx2a';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const START='2026-11-30', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
+const START='2026-11-01', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
 const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
 const $=s=>document.querySelector(s), app=$('#app');
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
