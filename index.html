@@ -101,7 +101,7 @@ async function mainView(){
 
 function challengeModal(){
   const m=document.createElement('div'); m.className='modal';
-  m.innerHTML='<div class="card gift"><div class="bow">🎀</div><div class="tag"><h3>🎁 ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
+  m.innerHTML='<div class="card gift"><div class="bow">🎀</div><div class="tag"><h3>🎁; ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
   <textarea id="tx" rows="4" placeholder="Racconta la tua attività..."></textarea>
   <input id="fl" type="file" accept="image/*,video/*">
   <div class="row"><button class="sec" id="cl">Chiudi</button><button id="sd">Pubblica</button></div><p id="msg" class="mut"></p></div>`;
