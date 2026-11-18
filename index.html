@@ -4,12 +4,11 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Great+Vibes&display=swap" rel="stylesheet">
 <title>Diario dell'Avvento</title>
 <style>
-:root{--bg:#f6f1e7;--card:#fff;--ink:#2b2b2b;--acc:#1f6f43;--mut:#777}
-@media(prefers-color-scheme:dark){:root{--bg:#1c1f1d;--card:#262a27;--ink:#eee;--acc:#4fb67f;--mut:#aaa}}
-*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+:root{--card:#f6ead6;--ink:#2b2b2b;--mut:#6b6254}
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,sans-serif;min-height:100vh;background:radial-gradient(circle at 50% 0%,#8c1a1a,#6e1010 70%) no-repeat fixed #6e1010;color:#f6ead6}
 main{max-width:640px;margin:auto;padding:16px}
-.card{background:var(--card);border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 4px #0002}
-input,select,textarea,button{font:inherit;width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #8885;background:var(--card);color:var(--ink)}
+.card{background:var(--card);color:#2b2b2b;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 4px #0002}
+input,select,textarea,button{font:inherit;width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #8885;background:#fff;color:#2b2b2b}
 button{background:#fff;color:#2b2b2b;font-weight:600;border:1px solid #bfb3a0;box-shadow:0 1px 3px #0003;cursor:pointer}button.sec{background:#8884;color:var(--ink);border:0;box-shadow:none;font-weight:400}
 .row{display:flex;gap:8px}.row>*{width:auto;flex:1}
 .mut{color:var(--mut);font-size:.85rem}
@@ -34,12 +33,14 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 .gift::after{content:"";position:absolute;left:0;right:0;top:34px;height:18px;background:linear-gradient(180deg,#d9a520,#f4c542,#d9a520)}
 .bow{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:3rem;line-height:1;z-index:2}
 .tag{position:relative;z-index:1;background:var(--card);border-radius:10px;padding:14px;border:2px dashed #c6282866}
+.top{color:#f6ead6}.top .mut{color:#e8d5b8}.top button.sec{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}
 </style></head><body><main id="app"></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 const SUPABASE_URL='https://gqmcbijcsfnbqilakllc.supabase.co', SUPABASE_KEY='sb_publishable_kzsguWJl6T7LdeO4rjjQ4w_RwLklx2a';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const START='2026-11-01', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
+const START='2026-11-30', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
 const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
 const $=s=>document.querySelector(s), app=$('#app');
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -110,7 +111,7 @@ function onboardView(){
 
 async function mainView(){
   const inRange=today>=START&&today<=END;
-  app.innerHTML=`<div class="row"><b style="align-self:center">👋 ${esc(me.nickname)} <span class="mut">(${esc(me.branca)})</span></b>
+  app.innerHTML=`<div class="row top"><b style="align-self:center">👋 ${esc(me.nickname)} <span class="mut">(${esc(me.branca)})</span></b>
   ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="body"></div>`;
   $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
   if(me.is_admin) $('#adm').onclick=adminView;
@@ -157,37 +158,74 @@ function challengeModal(edit){
   };
 }
 
-async function loadFeed(day,sel='#body'){
-  const box=$(sel); box.innerHTML='<p class="mut">Carico...</p>';
-  const {data:posts,error}=await sb.from('posts')
-    .select('*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id,profiles!reactions_user_id_fkey(nickname))')
-    .eq('day',day).order('created_at',{ascending:false});
+const SEL='*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id,profiles!reactions_user_id_fkey(nickname))';
+const lineOf=x=>`${x.posts?.day||''} · post di ${esc(x.posts?.profiles?.nickname)}`;
+
+async function loadFeed(day,sel='#body',uid=null){
+  const box=$(sel); box.innerHTML='<p>Carico...</p>';
+  let q=sb.from('posts').select(SEL);
+  q=uid?q.eq('user_id',uid).order('day',{ascending:false}):q.eq('day',day).order('created_at',{ascending:false});
+  const {data:posts,error}=await q;
   if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
   const paths=posts.map(p=>p.media_path).filter(Boolean), urls={};
-  if(paths.length){const s=await sb.storage.from('media').createSignedUrls(paths,3600); (s.data||[]).forEach(x=>urls[x.path]=x.signedUrl);}
-  box.innerHTML=(posts.length?'':'<div class="card">Ancora nessun post.</div>')+posts.map(p=>{
+  if(paths.length){const s=await sb.storage.from('media').createSignedUrls(paths,3600);(s.data||[]).forEach(x=>urls[x.path]=x.signedUrl);}
+  let head='',tail='',cmRows=[];
+  if(uid){
+    const [c,r]=await Promise.all([
+      sb.from('comments').select('text_content,posts!comments_post_id_fkey(day,profiles!posts_user_id_fkey(nickname))').eq('user_id',uid).order('created_at'),
+      sb.from('reactions').select('emoji,posts!reactions_post_id_fkey(day,profiles!posts_user_id_fkey(nickname))').eq('user_id',uid)]);
+    cmRows=c.data||[];
+    head='<div class="card"><button id="dl">⬇️ Scarica foto, video e testi (ZIP)</button><p id="dlm" class="mut"></p></div>';
+    tail=`<div class="card"><b>💬 Commenti scritti dall'utente</b>${cmRows.map(x=>`<p><span class="mut">${lineOf(x)}</span><br>${esc(x.text_content)}</p>`).join('')||'<p class="mut">Nessuno</p>'}
+    <b>😀 Reazioni date</b><p>${(r.data||[]).map(x=>`${x.emoji} <span class="mut">${lineOf(x)}</span>`).join('<br>')||'<span class="mut">Nessuna</span>'}</p></div>`;
+  }
+  const cards=posts.map(p=>{
     const media=!p.media_path?'':p.media_type==='video'?`<video src="${urls[p.media_path]}" controls></video>`:`<img src="${urls[p.media_path]}" loading="lazy">`;
     const re=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).length,on=p.reactions.some(r=>r.emoji===e&&r.user_id===me.id);
       return `<button class="re ${on?'on':''}" data-p="${p.id}" data-e="${e}" data-on="${on}">${e} ${n||''}</button>`}).join(' ');
     const who=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).map(r=>r.profiles?.nickname).filter(Boolean);return n.length?`<div class="mut">${e} ${esc(n.join(', '))}</div>`:''}).join('');
     const cm=p.comments.map(c=>`<p><b>${esc(c.profiles?.nickname)}</b>: ${esc(c.text_content)}</p>`).join('');
-    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}</span>${p.user_id===me.id&&p.day===today?`<button class="sec" style="width:auto;float:right;margin:0" data-edit="${p.id}">✏️ Modifica</button>`:''}
+    const ed=p.user_id===me.id&&p.day===today?`<button class="sec" style="width:auto;float:right;margin:0" data-edit="${p.id}">✏️ Modifica</button>`:'';
+    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}${uid?' · '+p.day:''}</span>${ed}
       <p>${esc(p.text_content)}</p>${media}<div style="margin-top:8px">${re}</div>${who}${cm}
       <div class="row"><input placeholder="Commenta..." maxlength="500" id="c${p.id}"><button data-c="${p.id}">Invia</button></div></div>`}).join('');
+  box.innerHTML=head+(posts.length?'':'<div class="card">Ancora nessun post.</div>')+cards+tail;
   box.querySelectorAll('.re').forEach(b=>b.onclick=async()=>{
-    const q=sb.from('reactions'); b.dataset.on==='true'
-      ? await q.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
-      : await q.insert({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e});
-    loadFeed(day,sel)});
+    const rq=sb.from('reactions'); b.dataset.on==='true'
+      ? await rq.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
+      : await rq.insert({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e});
+    loadFeed(day,sel,uid)});
   box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>challengeModal(posts.find(x=>x.id===b.dataset.edit)));
   box.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{
     const t=$('#c'+b.dataset.c).value.trim(); if(!t) return;
-    await sb.from('comments').insert({post_id:b.dataset.c,user_id:me.id,text_content:t}); loadFeed(day,sel)});
+    await sb.from('comments').insert({post_id:b.dataset.c,user_id:me.id,text_content:t}); loadFeed(day,sel,uid)});
+  const dl=box.querySelector('#dl');
+  if(dl) dl.onclick=async()=>{
+    const m=$('#dlm'); if(!window.JSZip) return m.textContent='Libreria ZIP non caricata: ricarica la pagina e riprova.';
+    m.textContent='Preparazione in corso (i video possono richiedere un po\')...';
+    const zip=new JSZip(), nick=($('#us')?.selectedOptions[0]?.text||'utente').split(' ')[0];
+    for(const p of posts){
+      if(p.text_content) zip.file(`${p.day}_testo.txt`,p.text_content);
+      if(p.media_path&&urls[p.media_path]){
+        try{const blob=await (await fetch(urls[p.media_path])).blob();
+          zip.file(`${p.day}_${p.media_type==='video'?'video':'foto'}.${p.media_path.split('.').pop()}`,blob);}catch(e){}
+      }
+    }
+    if(cmRows.length) zip.file('commenti_scritti.txt',cmRows.map(x=>`${x.posts?.day} (post di ${x.posts?.profiles?.nickname}): ${x.text_content}`).join('\n'));
+    const blob=await zip.generateAsync({type:'blob'}), a=document.createElement('a');
+    a.href=URL.createObjectURL(blob); a.download=`${nick}_diario.zip`; a.click();
+    setTimeout(()=>URL.revokeObjectURL(a.href),10000); m.textContent='Download avviato ✅';
+  };
 }
 
-function adminView(){
-  $('#body').innerHTML=`<div class="card"><b>Archivio admin</b><input type="date" id="dd" min="${START}" max="${END}" value="${today}"></div><div id="fd"></div>`;
-  $('#dd').onchange=()=>loadFeed($('#dd').value,'#fd'); loadFeed(today,'#fd');
+async function adminView(){
+  const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
+  $('#body').innerHTML=`<div class="card"><b>Archivio admin</b>
+  <label class="mut">Post di un giorno</label><input type="date" id="dd" min="${START}" max="${END}" value="${today}">
+  <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${(users||[]).map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
+  $('#dd').onchange=()=>{$('#us').value='';loadFeed($('#dd').value,'#fd');};
+  $('#us').onchange=()=>{const v=$('#us').value; v?loadFeed(null,'#fd',v):loadFeed($('#dd').value,'#fd');};
+  loadFeed(today,'#fd');
 }
 init();
 </script></body></html>
