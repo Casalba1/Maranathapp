@@ -16,6 +16,13 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 .modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
 .modal .card{max-width:480px;width:100%;max-height:90vh;overflow:auto}
 .re{width:auto;padding:4px 10px;background:#8883;color:var(--ink)}.re.on{background:var(--acc);color:#fff}
+.scene{text-align:center;color:#fff;padding:24px 14px;border-radius:18px;background:radial-gradient(2px 2px at 20% 30%,#fffa,transparent),radial-gradient(2px 2px at 72% 18%,#fffa,transparent),radial-gradient(1.5px 1.5px at 88% 62%,#fffa,transparent),radial-gradient(1.5px 1.5px at 10% 72%,#fffa,transparent),radial-gradient(2px 2px at 45% 85%,#fff8,transparent),linear-gradient(#0f1f4b,#2a2b63 70%,#4a2f5e)}
+.scene h1{font-family:Georgia,serif;margin:8px 0 2px;font-size:1.7rem}.scene>p{margin:0 0 14px;opacity:.85}
+.wr{display:flex;justify-content:center;gap:24px;align-items:flex-end}
+.cd{display:flex;flex-direction:column;align-items:center;font-size:1.3rem;height:80px;justify-content:flex-end}.cd b{width:14px;height:44px;border-radius:3px}
+.ring{height:22px;width:240px;margin:-4px auto 8px;border-radius:50%;background:linear-gradient(#2f7d4f,#1d5a37)}
+.scene .card{text-align:left;color:var(--ink)}
+.long{white-space:pre-wrap;max-height:42vh;overflow:auto}
 .gift{background:#c62828;padding:58px 14px 14px;position:relative}
 .gift::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:34px;transform:translateX(-50%);background:linear-gradient(90deg,#d9a520,#f4c542,#d9a520)}
 .gift::after{content:"";position:absolute;left:0;right:0;top:34px;height:18px;background:linear-gradient(180deg,#d9a520,#f4c542,#d9a520)}
@@ -26,7 +33,7 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 <script>
 const SUPABASE_URL='https://gqmcbijcsfnbqilakllc.supabase.co', SUPABASE_KEY='sb_publishable_kzsguWJl6T7LdeO4rjjQ4w_RwLklx2a';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const START='2026-11-01', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
+const START='2026-11-30', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
 const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
 const $=s=>document.querySelector(s), app=$('#app');
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -40,14 +47,22 @@ async function init(){
 }
 
 const mail=n=>n.trim().toLowerCase()+'@diario-avvento.app';
+const CAPI_MAX=9, NOCAPO='Mi dispiace, non sei un capo!';
+const capiFull=async()=>{const {data}=await sb.rpc('capi_count');return data>=CAPI_MAX;};
+const OPTS='<option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option><option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option>';
+function scene(inner){
+  const d=Math.floor((new Date(today)-new Date('2026-11-29'))/864e5), lit=Math.max(1,Math.min(4,Math.floor(d/7)+1));
+  const col=['#7b4fbf','#7b4fbf','#e58fb7','#7b4fbf'];
+  return `<div class="scene"><div class="wr">${col.map((c,i)=>`<div class="cd"><span>${i<lit?'🔥':''}</span><b style="background:${c}"></b></div>`).join('')}</div><div class="ring"></div>
+  <h1>Diario dell'Avvento</h1><p>Aspettando il Natale, un giorno alla volta ✨</p>${inner}</div>`;
+}
 function loginView(){
   let reg=false;
-  app.innerHTML=`<div class="card"><h2>📖 Diario dell'Avvento</h2>
+  app.innerHTML=scene(`<div class="card">
   <input id="nick" placeholder="Nickname" maxlength="20" autocapitalize="none" autocomplete="username">
   <input id="pw" type="password" placeholder="Password (almeno 6 caratteri)" autocomplete="current-password">
-  <select id="br" style="display:none"><option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option>
-  <option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option></select>
-  <button id="go">Entra</button><button class="sec" id="tg">Prima volta? Registrati</button><p id="msg" class="mut"></p></div>`;
+  <select id="br" style="display:none">${OPTS}</select>
+  <button id="go">Entra</button><button class="sec" id="tg">Prima volta? Registrati</button><p id="msg" class="mut"></p></div>`);
   $('#tg').onclick=()=>{reg=!reg;$('#br').style.display=reg?'':'none';$('#go').textContent=reg?'Registrati':'Entra';
     $('#tg').textContent=reg?'Ho già un account':'Prima volta? Registrati';$('#msg').textContent='';};
   $('#go').onclick=async()=>{
@@ -56,11 +71,12 @@ function loginView(){
     if(pw.length<6) return msg.textContent='La password deve avere almeno 6 caratteri.';
     if(reg){
       if(!br) return msg.textContent='Scegli la branca.';
+      if(br==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
       const {data,error}=await sb.auth.signUp({email:mail(nick),password:pw});
       if(error) return msg.textContent=/registered|exists/i.test(error.message)?'Nickname già usato, scegline un altro.':error.message;
       if(!data.session) return msg.textContent='Registrazione non completata: su Supabase disattiva "Confirm email".';
       const r=await sb.from('profiles').insert({id:data.user.id,nickname:nick,branca:br});
-      if(r.error) return msg.textContent=r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message;
+      if(r.error) return msg.textContent=r.error.message.includes('capi_limit')?NOCAPO:r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message;
     } else {
       const {error}=await sb.auth.signInWithPassword({email:mail(nick),password:pw});
       if(error) return msg.textContent='Nickname o password errati.';
@@ -70,16 +86,15 @@ function loginView(){
 }
 
 function onboardView(){
-  app.innerHTML=`<div class="card"><h2>Benvenuto!</h2>
-  <input id="nick" placeholder="Nickname" maxlength="20">
-  <select id="br"><option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option>
-  <option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option></select>
-  <button id="ok">Entra</button><p id="msg" class="mut"></p></div>`;
+  app.innerHTML=scene(`<div class="card"><h3>Benvenuto! Completa il profilo</h3>
+  <input id="nick" placeholder="Nickname" maxlength="20"><select id="br">${OPTS}</select>
+  <button id="ok">Entra</button><p id="msg" class="mut"></p></div>`);
   $('#ok').onclick=async()=>{
-    const nickname=$('#nick').value.trim(), branca=$('#br').value;
-    if(!nickname||!branca) return $('#msg').textContent='Compila tutti i campi.';
+    const nickname=$('#nick').value.trim(), branca=$('#br').value, msg=$('#msg');
+    if(!nickname||!branca) return msg.textContent='Compila tutti i campi.';
+    if(branca==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
     const {error}=await sb.from('profiles').insert({id:session.user.id,nickname,branca});
-    if(error) return $('#msg').textContent=error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
+    if(error) return msg.textContent=error.message.includes('capi_limit')?NOCAPO:error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
     init();
   };
 }
@@ -95,29 +110,40 @@ async function mainView(){
   const p=await sb.from('posts').select('id').eq('day',today).eq('user_id',me.id).maybeSingle(); myPost=p.data;
   if(!challenge){ $('#body').innerHTML='<div class="card">Oggi non c\'è ancora una sfida.</div>'; return; }
   if(!myPost){ $('#body').innerHTML=`<div class="card"><b>Completa la sfida per vedere i post degli altri</b>
-    <button id="open">Apri la sfida di oggi</button></div>`; $('#open').onclick=challengeModal; challengeModal(); }
+    <button id="open">Apri la sfida di oggi</button></div>`; $('#open').onclick=()=>challengeModal(); challengeModal(); }
   else loadFeed(today);
 }
 
-function challengeModal(){
-  const m=document.createElement('div'); m.className='modal';
-  m.innerHTML=`<div class="card gift"><div class="bow">🎀</div><div class="tag"><h3>🎁 ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
-  <textarea id="tx" rows="4" placeholder="Racconta la tua attività..."></textarea>
-  <input id="fl" type="file" accept="image/*,video/*">
-  <div class="row"><button class="sec" id="cl">Chiudi</button><button id="sd">Pubblica</button></div><p id="msg" class="mut"></p></div></div>`;
-  document.body.appendChild(m); $('#cl').onclick=()=>m.remove();
+function challengeModal(edit){
+  let step=edit?2:0; const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="card gift"><div class="bow">🎀</div><div class="tag">
+  <div class="pg"><h3>📖 Vangelo del giorno</h3><p class="long">${esc(challenge.gospel||'Il vangelo di oggi arriverà presto.')}</p></div>
+  <div class="pg"><h3>💭 Commento</h3><p class="long">${esc(challenge.commentary||'Il commento di oggi arriverà presto.')}</p></div>
+  <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
+  <textarea id="tx" rows="4" placeholder="Racconta la tua attività...">${esc(edit?.text_content||'')}</textarea>
+  <input id="fl" type="file" accept="image/*,video/*">${edit?.media_path?'<p class="mut">Se scegli un nuovo file, sostituisce quello attuale.</p>':''}</div>
+  <p class="mut" id="st" style="text-align:center"></p>
+  <div class="row"><button class="sec" id="cl">Chiudi</button><button class="sec" id="bk">←</button><button id="nx">Avanti →</button><button id="sd">${edit?'Salva':'Pubblica'}</button></div><p id="msg" class="mut"></p></div></div>`;
+  document.body.appendChild(m);
+  const pg=m.querySelectorAll('.pg');
+  const go=n=>{step=n;pg.forEach((p,i)=>p.style.display=i===n?'':'none');$('#st').textContent=`${n+1} / 3`;
+    $('#bk').style.display=n?'':'none';$('#nx').style.display=n<2?'':'none';$('#sd').style.display=n===2?'':'none';};
+  $('#cl').onclick=()=>m.remove(); $('#bk').onclick=()=>go(step-1); $('#nx').onclick=()=>go(step+1); go(step);
   $('#sd').onclick=async()=>{
     const text=$('#tx').value.trim(), f=$('#fl').files[0], msg=$('#msg');
-    if(!text&&!f) return msg.textContent='Aggiungi un testo, una foto o un video.';
-    msg.textContent='Caricamento in corso...'; let media_path=null, media_type=null;
+    let media_path=edit?.media_path||null, media_type=edit?.media_type||null; const old=media_path;
+    if(!text&&!f&&!media_path) return msg.textContent='Aggiungi un testo, una foto o un video.';
+    msg.textContent='Salvataggio in corso...';
     if(f){
       media_type=f.type.startsWith('video')?'video':'image';
       media_path=`${me.id}/${today}-${Date.now()}.${f.name.split('.').pop()}`;
       const u=await sb.storage.from('media').upload(media_path,f);
       if(u.error) return msg.textContent='Errore upload: '+u.error.message;
     }
-    const {error}=await sb.from('posts').insert({user_id:me.id,day:today,text_content:text||null,media_path,media_type});
+    const row={text_content:text||null,media_path,media_type};
+    const {error}=edit?await sb.from('posts').update(row).eq('id',edit.id):await sb.from('posts').insert({...row,user_id:me.id,day:today});
     if(error) return msg.textContent=error.message;
+    if(edit&&f&&old) sb.storage.from('media').remove([old]);
     m.remove(); mainView();
   };
 }
@@ -125,7 +151,7 @@ function challengeModal(){
 async function loadFeed(day,sel='#body'){
   const box=$(sel); box.innerHTML='<p class="mut">Carico...</p>';
   const {data:posts,error}=await sb.from('posts')
-    .select('*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id)')
+    .select('*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id,profiles!reactions_user_id_fkey(nickname))')
     .eq('day',day).order('created_at',{ascending:false});
   if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
   const paths=posts.map(p=>p.media_path).filter(Boolean), urls={};
@@ -134,15 +160,17 @@ async function loadFeed(day,sel='#body'){
     const media=!p.media_path?'':p.media_type==='video'?`<video src="${urls[p.media_path]}" controls></video>`:`<img src="${urls[p.media_path]}" loading="lazy">`;
     const re=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).length,on=p.reactions.some(r=>r.emoji===e&&r.user_id===me.id);
       return `<button class="re ${on?'on':''}" data-p="${p.id}" data-e="${e}" data-on="${on}">${e} ${n||''}</button>`}).join(' ');
+    const who=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).map(r=>r.profiles?.nickname).filter(Boolean);return n.length?`<div class="mut">${e} ${esc(n.join(', '))}</div>`:''}).join('');
     const cm=p.comments.map(c=>`<p><b>${esc(c.profiles?.nickname)}</b>: ${esc(c.text_content)}</p>`).join('');
-    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}</span>
-      <p>${esc(p.text_content)}</p>${media}<div style="margin-top:8px">${re}</div>${cm}
+    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}</span>${p.user_id===me.id&&p.day===today?`<button class="sec" style="width:auto;float:right;margin:0" data-edit="${p.id}">✏️ Modifica</button>`:''}
+      <p>${esc(p.text_content)}</p>${media}<div style="margin-top:8px">${re}</div>${who}${cm}
       <div class="row"><input placeholder="Commenta..." maxlength="500" id="c${p.id}"><button data-c="${p.id}">Invia</button></div></div>`}).join('');
   box.querySelectorAll('.re').forEach(b=>b.onclick=async()=>{
     const q=sb.from('reactions'); b.dataset.on==='true'
       ? await q.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
       : await q.insert({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e});
     loadFeed(day,sel)});
+  box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>challengeModal(posts.find(x=>x.id===b.dataset.edit)));
   box.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{
     const t=$('#c'+b.dataset.c).value.trim(); if(!t) return;
     await sb.from('comments').insert({post_id:b.dataset.c,user_id:me.id,text_content:t}); loadFeed(day,sel)});
