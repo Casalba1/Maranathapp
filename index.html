@@ -29,11 +29,6 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 .ring{height:24px;width:250px;margin:-5px auto 8px;border-radius:50%;background:radial-gradient(circle at 20% 50%,#c62828 3px,transparent 4px),radial-gradient(circle at 55% 40%,#c62828 3px,transparent 4px),radial-gradient(circle at 85% 55%,#c62828 3px,transparent 4px),linear-gradient(#3f8f5f,#1d5a37)}
 .handle{font-family:'Cormorant Garamond',Georgia,serif;letter-spacing:.15em;opacity:.85;margin:6px 0 0}
 .long{white-space:pre-wrap;max-height:42vh;overflow:auto}
-.gift{background:#c62828;padding:58px 14px 14px;position:relative}
-.gift::before{content:"";position:absolute;top:0;bottom:0;left:50%;width:34px;transform:translateX(-50%);background:linear-gradient(90deg,#d9a520,#f4c542,#d9a520)}
-.gift::after{content:"";position:absolute;left:0;right:0;top:34px;height:18px;background:linear-gradient(180deg,#d9a520,#f4c542,#d9a520)}
-.bow{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:3rem;line-height:1;z-index:2}
-.tag{position:relative;z-index:1;background:var(--card);border-radius:10px;padding:14px;border:2px dashed #c6282866}
 .top{color:#f6ead6}.top .mut{color:#e8d5b8}.top button.sec{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}
 :root{color-scheme:light}
 input,select,textarea{color:#2b2b2b;-webkit-text-fill-color:#2b2b2b;caret-color:#2b2b2b;background:#fff}
@@ -42,6 +37,34 @@ select option{background:#fff;color:#2b2b2b}
 input[type=date],input[type=file]{min-height:44px}
 .tab{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}.tab.on{background:#fff;border:2px solid #7a1313;font-weight:700}
 label{display:block;margin:10px 0 0;font-weight:600;color:#4a4136}
+main{position:relative;z-index:1}
+body::before,body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none}
+body::before{background-size:220px 220px;opacity:.55;animation:tw 5s ease-in-out infinite alternate;
+ background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(1.5px 1.5px at 90px 120px,#ffe9a8,transparent),radial-gradient(2.5px 2.5px at 160px 60px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 170px,#fff,transparent),radial-gradient(2px 2px at 190px 190px,#ffe9a8,transparent)}
+body::after{background-size:310px 310px;opacity:.45;animation:tw 7s 1.5s ease-in-out infinite alternate-reverse;
+ background-image:radial-gradient(2px 2px at 40px 80px,#ffe9a8,transparent),radial-gradient(1.5px 1.5px at 130px 30px,#fff,transparent),radial-gradient(2.5px 2.5px at 250px 140px,#fff,transparent),radial-gradient(1.5px 1.5px at 100px 240px,#ffe9a8,transparent),radial-gradient(2px 2px at 280px 270px,#fff,transparent)}
+@keyframes tw{from{opacity:.2}to{opacity:.7}}
+.modal{background:radial-gradient(circle at 50% 30%,#3a0d0dd9,#000000e6)}
+.gbox{position:relative;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;margin-top:34px}
+.glid{position:absolute;z-index:3;top:-26px;left:-8px;right:-8px;height:52px;border-radius:14px 14px 5px 5px;transform-origin:left bottom;
+ background:radial-gradient(circle,#ffffff30 2px,transparent 3px) 0 0/20px 20px,linear-gradient(#e53935,#b71c1c);box-shadow:0 6px 14px #0007;animation:lid 1s .4s cubic-bezier(.55,-.25,.6,1) forwards}
+.glid::before,.gbody::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:38px;transform:translateX(-50%);background:linear-gradient(90deg,#d9a520,#fbd965,#d9a520)}
+.gbow{position:absolute;z-index:4;left:50%;top:-34px;width:104px;height:46px;transform:translateX(-50%)}
+.gbow i{position:absolute;top:0;width:48px;height:36px;border:10px solid #f4c542;border-radius:50%;box-shadow:inset 0 0 0 2px #d9a52099}
+.gbow i:nth-child(1){left:0;transform:rotate(-22deg)}.gbow i:nth-child(2){right:0;transform:rotate(22deg)}
+.gbow b{position:absolute;left:50%;top:16px;width:24px;height:24px;margin-left:-12px;border-radius:7px;background:linear-gradient(#fbd965,#d9a520)}
+.gbody{position:relative;flex:1;min-height:0;overflow:auto;border-radius:16px;padding:16px 14px;box-shadow:0 14px 34px #000a;
+ background:radial-gradient(circle,#ffffff30 2px,transparent 3px) 0 0/20px 20px,linear-gradient(90deg,#b71c1c,#d32f2f 50%,#b71c1c)}
+.paper{position:relative;z-index:1;background:var(--card);color:#2b2b2b;border-radius:12px;padding:16px;box-shadow:0 4px 14px #0005;animation:rise .7s 1s both}
+.paper h3{font-family:'Cormorant Garamond',Georgia,serif;text-align:center;font-size:1.4rem;margin:2px 0 10px}
+.paper h3::after{content:"✦ ✦ ✦";display:block;font-size:.6rem;letter-spacing:.4em;color:#c9a227;margin-top:2px}
+.pg{animation:slide .35s}
+.dots span{display:inline-block;width:9px;height:9px;border-radius:50%;background:#cdbd9f;margin:0 4px;transition:.2s}.dots span.on{background:#b71c1c;transform:scale(1.3)}
+@keyframes lid{to{transform:translate(-26px,-130px) rotate(-16deg);opacity:0;visibility:hidden}}
+@keyframes rise{from{opacity:0;transform:translateY(26px) scale(.95)}to{opacity:1;transform:none}}
+@keyframes slide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.tabs{flex-wrap:wrap}.tabs>*{min-width:45%}
+@media(prefers-reduced-motion:reduce){body::before,body::after{animation:none}.glid{display:none}.paper,.pg{animation:none}}
 </style></head><body><main id="app"></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -71,8 +94,7 @@ function scene(inner){
   const t=demo||today, SUN=['2026-11-29','2026-12-06','2026-12-13','2026-12-20'], col=['#9a6fd8','#9a6fd8','#f0a0c4','#9a6fd8'];
   return `<div class="scene"><img class="tree" alt="Calendario dell'Avvento" src="${TREE}">
   <div class="hello">Benvenuto</div><h1>Diario dell'Avvento</h1>${inner}
-  <div class="wr">${col.map((c,i)=>`<div class="cd"><span>${t>=SUN[i]?'🔥':''}</span><b style="background:${c}"></b></div>`).join('')}</div><div class="ring"></div>
-  <p class="handle">@granbelsito</p></div>`;
+  <div class="wr">${col.map((c,i)=>`<div class="cd"><span>${t>=SUN[i]?'🔥':''}</span><b style="background:${c}"></b></div>`).join('')}</div><div class="ring"></div></div>`;
 }
 function loginView(){
   let reg=false;
@@ -135,17 +157,19 @@ async function mainView(){
 
 function challengeModal(edit){
   let step=edit?2:0; const m=document.createElement('div'); m.className='modal';
-  m.innerHTML=`<div class="card gift"><div class="bow">🎀</div><div class="tag">
+  m.innerHTML=`<div class="gbox"><div class="glid"><div class="gbow"><i></i><i></i><b></b></div></div><div class="gbody"><div class="paper">
   <div class="pg"><h3>📖 Vangelo del giorno</h3><p class="long">${esc(challenge.gospel||'Il vangelo di oggi arriverà presto.')}</p></div>
   <div class="pg"><h3>💭 Commento</h3><p class="long">${esc(challenge.commentary||'Il commento di oggi arriverà presto.')}</p></div>
-  <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3><p>${esc(challenge.description)}</p>
+  <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3><p style="text-align:center">${esc(challenge.description)}</p>
   <textarea id="tx" rows="4" placeholder="Racconta la tua attività...">${esc(edit?.text_content||'')}</textarea>
   <input id="fl" type="file" accept="image/*,video/*">${edit?.media_path?'<p class="mut">Se scegli un nuovo file, sostituisce quello attuale.</p>':''}</div>
-  <p class="mut" id="st" style="text-align:center"></p>
-  <div class="row"><button class="sec" id="cl">Chiudi</button><button class="sec" id="bk">←</button><button id="nx">Avanti →</button><button id="sd">${edit?'Salva':'Pubblica'}</button></div><p id="msg" class="mut"></p></div></div>`;
+  <div class="dots" id="st" style="text-align:center;margin:12px 0 4px"></div>
+  <div class="row"><button class="sec" id="cl">Chiudi</button><button class="sec" id="bk">←</button><button id="nx">Avanti →</button><button id="sd">${edit?'Salva':'Pubblica'}</button></div><p id="msg" class="mut"></p>
+  </div></div></div>`;
   document.body.appendChild(m);
   const pg=m.querySelectorAll('.pg');
-  const go=n=>{step=n;pg.forEach((p,i)=>p.style.display=i===n?'':'none');$('#st').textContent=`${n+1} / 3`;
+  const go=n=>{step=n;pg.forEach((p,i)=>p.style.display=i===n?'':'none');
+    $('#st').innerHTML=[0,1,2].map(i=>`<span class="${i===n?'on':''}"></span>`).join('');
     $('#bk').style.display=n?'':'none';$('#nx').style.display=n<2?'':'none';$('#sd').style.display=n===2?'':'none';};
   $('#cl').onclick=()=>m.remove(); $('#bk').onclick=()=>go(step-1); $('#nx').onclick=()=>go(step+1); go(step);
   $('#sd').onclick=async()=>{
@@ -294,12 +318,28 @@ async function loadMyFiles(){
   bindFiles(box,data);
 }
 
+async function accountView(){
+  const box=$('#admbox'); box.innerHTML='<p>Carico...</p>';
+  const {data,error}=await sb.rpc('admin_lista_account');
+  if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
+  const dt=x=>x?new Date(x).toLocaleString('it-IT'):'mai';
+  box.innerHTML=`<div class="card"><b>👥 Account (${data.length})</b>
+  <p class="mut">Le password non sono leggibili da nessuno, nemmeno da te: sono salvate cifrate. Se un utente la dimentica, puoi impostarne una nuova qui sotto e comunicargliela.</p>
+  ${BRANCHE.map(b=>{const r=data.filter(x=>x.branca===b);return r.length?`<b>📁 ${b} (${r.length})</b>${r.map(x=>`<p>${esc(x.nickname)}${x.is_admin?' ⭐':''}<br><span class="mut">ultimo accesso: ${dt(x.ultimo_accesso)}</span><br><button class="sec" data-r="${x.id}" data-n="${esc(x.nickname)}" style="width:auto">🔑 Reimposta password</button></p>`).join('')}`:'';}).join('')}</div>`;
+  box.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{
+    const gen=Array.from(crypto.getRandomValues(new Uint32Array(8)),n=>'abcdefghjkmnpqrstuvwxyz23456789'[n%31]).join('');
+    const pw=prompt('Nuova password per '+b.dataset.n+' (minimo 6 caratteri):',gen); if(!pw) return;
+    const {error}=await sb.rpc('admin_reimposta_password',{uid:b.dataset.r,nuova:pw});
+    alert(error?'Errore: '+error.message:'Password di '+b.dataset.n+' reimpostata.\nNuova password: '+pw+'\nComunicala all\'utente: non verrà più mostrata.');
+  });
+}
+
 async function adminView(){
   const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
   const u=users||[];
-  $('#body').innerHTML=`<div class="row"><button class="tab" id="t1">📚 Archivio</button><button class="tab" id="t2">📎 File riservati</button><button class="tab" id="t3">📁 Recap</button></div><div id="admbox"></div>`;
-  const tab=(n,f)=>{[1,2,3].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
-  $('#t1').onclick=()=>tab(1,()=>archivio(u)); $('#t2').onclick=()=>tab(2,()=>riservati(u)); $('#t3').onclick=()=>tab(3,recapView); tab(1,()=>archivio(u));
+  $('#body').innerHTML=`<div class="row tabs"><button class="tab" id="t1">📚 Archivio</button><button class="tab" id="t2">📎 File riservati</button><button class="tab" id="t3">📁 Recap</button><button class="tab" id="t4">👥 Account</button></div><div id="admbox"></div>`;
+  const tab=(n,f)=>{[1,2,3,4].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
+  $('#t1').onclick=()=>tab(1,()=>archivio(u)); $('#t2').onclick=()=>tab(2,()=>riservati(u)); $('#t3').onclick=()=>tab(3,recapView); $('#t4').onclick=()=>tab(4,accountView); tab(1,()=>archivio(u));
 }
 function archivio(users){
   $('#admbox').innerHTML=`<div class="card"><b>Archivio admin</b>
