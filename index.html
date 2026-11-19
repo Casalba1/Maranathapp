@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="it"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600&family=Great+Vibes&display=swap" rel="stylesheet">
 <title>Diario dell'Avvento</title>
 <style>
@@ -34,13 +35,19 @@ img,video{max-width:100%;border-radius:10px;margin-top:8px}
 .bow{position:absolute;top:0;left:50%;transform:translateX(-50%);font-size:3rem;line-height:1;z-index:2}
 .tag{position:relative;z-index:1;background:var(--card);border-radius:10px;padding:14px;border:2px dashed #c6282866}
 .top{color:#f6ead6}.top .mut{color:#e8d5b8}.top button.sec{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}
+:root{color-scheme:light}
+input,select,textarea{color:#2b2b2b;-webkit-text-fill-color:#2b2b2b;caret-color:#2b2b2b;background:#fff}
+input::placeholder,textarea::placeholder{color:#8a7f70;-webkit-text-fill-color:#8a7f70;opacity:1}
+select option{background:#fff;color:#2b2b2b}
+input[type=date],input[type=file]{min-height:44px}
+.tab{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}.tab.on{background:#fff;border:2px solid #7a1313;font-weight:700}
 </style></head><body><main id="app"></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script>
 const SUPABASE_URL='https://gqmcbijcsfnbqilakllc.supabase.co', SUPABASE_KEY='sb_publishable_kzsguWJl6T7LdeO4rjjQ4w_RwLklx2a';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
-const START='2026-11-01', END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
+const START='2026-11-01' /* PROVA: prima del lancio rimetti '2026-11-30' */, END='2026-12-25', EMOJI=['❤️','👏','🔥','😂','⛺'];
 const today=new Date().toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
 const $=s=>document.querySelector(s), app=$('#app');
 const esc=t=>String(t??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -289,12 +296,13 @@ async function loadMyFiles(){
 async function adminView(){
   const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
   const u=users||[];
-  $('#body').innerHTML=`<div class="row"><button class="sec" id="t1">📚 Archivio</button><button class="sec" id="t2">📎 File riservati</button><button class="sec" id="t3">📁 Recap</button></div><div id="adm"></div>`;
-  $('#t1').onclick=()=>archivio(u); $('#t2').onclick=()=>riservati(u); $('#t3').onclick=recapView; archivio(u);
+  $('#body').innerHTML=`<div class="row"><button class="tab" id="t1">📚 Archivio</button><button class="tab" id="t2">📎 File riservati</button><button class="tab" id="t3">📁 Recap</button></div><div id="adm"></div>`;
+  const tab=(n,f)=>{[1,2,3].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
+  $('#t1').onclick=()=>tab(1,()=>archivio(u)); $('#t2').onclick=()=>tab(2,()=>riservati(u)); $('#t3').onclick=()=>tab(3,recapView); tab(1,()=>archivio(u));
 }
 function archivio(users){
   $('#adm').innerHTML=`<div class="card"><b>Archivio admin</b>
-  <label class="mut">Post di un giorno</label><input type="date" id="dd" min="${START}" max="${END}" value="${today}">
+  <label class="mut">Post di un giorno</label><input type="date" id="dd" value="${today}">
   <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
   $('#dd').onchange=()=>{$('#us').value='';loadFeed($('#dd').value,'#fd');};
   $('#us').onchange=()=>{const v=$('#us').value; v?loadFeed(null,'#fd',v):loadFeed($('#dd').value,'#fd');};
