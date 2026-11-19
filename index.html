@@ -41,6 +41,7 @@ input::placeholder,textarea::placeholder{color:#8a7f70;-webkit-text-fill-color:#
 select option{background:#fff;color:#2b2b2b}
 input[type=date],input[type=file]{min-height:44px}
 .tab{background:#f6ead6;color:#2b2b2b;border:1px solid #bfb3a0}.tab.on{background:#fff;border:2px solid #7a1313;font-weight:700}
+label{display:block;margin:10px 0 0;font-weight:600;color:#4a4136}
 </style></head><body><main id="app"></main>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
@@ -243,7 +244,7 @@ function saveBlob(blob,name){const a=document.createElement('a');a.href=URL.crea
 const BRANCHE=['lupetti','esploratori','rover','capi'];
 async function recapView(){
   const y=new Date(Date.now()-864e5).toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
-  $('#adm').innerHTML=`<div class="card"><b>📁 Recap giornalieri</b>
+  $('#admbox').innerHTML=`<div class="card"><b>📁 Recap giornalieri</b>
   <p class="mut">Ogni notte a mezzanotte l'app prepara da sola il recap del giorno appena finito, diviso per branca.</p>
   <input type="date" id="rd" value="${y}"><div class="row"><button class="sec" id="rg">Genera ora</button><button id="rz">⬇️ ZIP del giorno</button></div>
   <button id="ra">⬇️ ZIP di tutti i giorni</button><p id="rmsg" class="mut"></p></div><div id="rlist"></div>`;
@@ -296,12 +297,12 @@ async function loadMyFiles(){
 async function adminView(){
   const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
   const u=users||[];
-  $('#body').innerHTML=`<div class="row"><button class="tab" id="t1">📚 Archivio</button><button class="tab" id="t2">📎 File riservati</button><button class="tab" id="t3">📁 Recap</button></div><div id="adm"></div>`;
+  $('#body').innerHTML=`<div class="row"><button class="tab" id="t1">📚 Archivio</button><button class="tab" id="t2">📎 File riservati</button><button class="tab" id="t3">📁 Recap</button></div><div id="admbox"></div>`;
   const tab=(n,f)=>{[1,2,3].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
   $('#t1').onclick=()=>tab(1,()=>archivio(u)); $('#t2').onclick=()=>tab(2,()=>riservati(u)); $('#t3').onclick=()=>tab(3,recapView); tab(1,()=>archivio(u));
 }
 function archivio(users){
-  $('#adm').innerHTML=`<div class="card"><b>Archivio admin</b>
+  $('#admbox').innerHTML=`<div class="card"><b>Archivio admin</b>
   <label class="mut">Post di un giorno</label><input type="date" id="dd" value="${today}">
   <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
   $('#dd').onchange=()=>{$('#us').value='';loadFeed($('#dd').value,'#fd');};
@@ -309,7 +310,7 @@ function archivio(users){
   loadFeed(today,'#fd');
 }
 async function riservati(users){
-  $('#adm').innerHTML=`<div class="card"><b>📎 Invia un file a un utente</b>
+  $('#admbox').innerHTML=`<div class="card"><b>📎 Invia un file a un utente</b>
   <p class="mut">Solo il destinatario (e gli admin) potrà vederlo e scaricarlo. Massimo 50 MB.</p>
   <select id="ru"><option value="">Scegli il destinatario</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select>
   <input id="rf" type="file"><input id="rn" placeholder="Nota (facoltativa)" maxlength="200">
