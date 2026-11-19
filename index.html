@@ -39,11 +39,9 @@ input[type=date],input[type=file]{min-height:44px}
 label{display:block;margin:10px 0 0;font-weight:600;color:#4a4136}
 main{position:relative;z-index:1}
 body::before,body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none}
-body::before{background-size:220px 220px;opacity:.55;animation:tw 5s ease-in-out infinite alternate;
- background-image:radial-gradient(2px 2px at 20px 30px,#fff,transparent),radial-gradient(1.5px 1.5px at 90px 120px,#ffe9a8,transparent),radial-gradient(2.5px 2.5px at 160px 60px,#fff,transparent),radial-gradient(1.5px 1.5px at 60px 170px,#fff,transparent),radial-gradient(2px 2px at 190px 190px,#ffe9a8,transparent)}
-body::after{background-size:310px 310px;opacity:.45;animation:tw 7s 1.5s ease-in-out infinite alternate-reverse;
- background-image:radial-gradient(2px 2px at 40px 80px,#ffe9a8,transparent),radial-gradient(1.5px 1.5px at 130px 30px,#fff,transparent),radial-gradient(2.5px 2.5px at 250px 140px,#fff,transparent),radial-gradient(1.5px 1.5px at 100px 240px,#ffe9a8,transparent),radial-gradient(2px 2px at 280px 270px,#fff,transparent)}
-@keyframes tw{from{opacity:.2}to{opacity:.7}}
+body::before{background-size:220px 220px;opacity:.9;animation:tw 4s ease-in-out infinite alternate;background-image:radial-gradient(5px 5px at 30px 40px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(4px 4px at 110px 150px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(7px 7px at 170px 60px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(3px 3px at 60px 190px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(5px 5px at 190px 185px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(3px 3px at 130px 20px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(4px 4px at 20px 120px,#ffffff 0 30%,#ffffff77 55%,transparent)}
+body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in-out infinite alternate-reverse;background-image:radial-gradient(6px 6px at 50px 90px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(4px 4px at 140px 40px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(7px 7px at 250px 150px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(4px 4px at 110px 250px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(5px 5px at 280px 270px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(3px 3px at 200px 230px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(3px 3px at 20px 200px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(4px 4px at 260px 30px,#ffe08a 0 30%,#ffe08a77 55%,transparent)}
+@keyframes tw{from{opacity:.45}to{opacity:1}}
 .modal{background:radial-gradient(circle at 50% 30%,#3a0d0dd9,#000000e6)}
 .gbox{position:relative;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;margin-top:34px}
 .glid{position:absolute;z-index:3;top:-26px;left:-8px;right:-8px;height:52px;border-radius:14px 14px 5px 5px;transform-origin:left bottom;
@@ -191,6 +189,9 @@ function challengeModal(edit){
   };
 }
 
+let admBr='';
+const brSel=id=>`<label class="mut">Branca</label><select id="${id}"><option value="">Tutte le branche</option>${BRANCHE.map(b=>`<option value="${b}">${b}</option>`).join('')}</select>`;
+const userOpts=(users,br,ph)=>`<option value="">${ph}</option>`+users.filter(u=>!br||u.branca===br).map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('');
 const SEL='*,profiles!posts_user_id_fkey(nickname,branca),comments(id,text_content,profiles!comments_user_id_fkey(nickname)),reactions(emoji,user_id,profiles!reactions_user_id_fkey(nickname))';
 const lineOf=x=>`${x.posts?.day||''} · post di ${esc(x.posts?.profiles?.nickname)}`;
 
@@ -198,8 +199,9 @@ async function loadFeed(day,sel='#body',uid=null){
   const box=$(sel); box.innerHTML='<p>Carico...</p>';
   let q=sb.from('posts').select(SEL);
   q=uid?q.eq('user_id',uid).order('day',{ascending:false}):q.eq('day',day).order('created_at',{ascending:false});
-  const {data:posts,error}=await q;
+  let {data:posts,error}=await q;
   if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
+  if(!uid&&sel==='#fd'&&admBr) posts=posts.filter(p=>p.profiles?.branca===admBr);
   const paths=posts.map(p=>p.media_path).filter(Boolean), urls={};
   if(paths.length){const s=await sb.storage.from('media').createSignedUrls(paths,3600);(s.data||[]).forEach(x=>urls[x.path]=x.signedUrl);}
   let head='',tail='',cmRows=[];
@@ -270,14 +272,15 @@ async function recapView(){
   const y=new Date(Date.now()-864e5).toLocaleDateString('sv-SE',{timeZone:'Europe/Rome'});
   $('#admbox').innerHTML=`<div class="card"><b>📁 Recap giornalieri</b>
   <p class="mut">Ogni notte a mezzanotte l'app prepara da sola il recap del giorno appena finito, diviso per branca.</p>
-  <input type="date" id="rd" value="${y}"><div class="row"><button class="sec" id="rg">Genera ora</button><button id="rz">⬇️ ZIP del giorno</button></div>
+  ${brSel('rbr')}<label class="mut">Giorno</label><input type="date" id="rd" value="${y}"><div class="row"><button class="sec" id="rg">Genera ora</button><button id="rz">⬇️ ZIP del giorno</button></div>
   <button id="ra">⬇️ ZIP di tutti i giorni</button><p id="rmsg" class="mut"></p></div><div id="rlist"></div>`;
   let rows=[];
   const load=async()=>{
     const {data,error}=await sb.from('recaps').select('*').eq('day',$('#rd').value).order('nickname');
     if(error) return $('#rlist').innerHTML=`<div class="card">${esc(error.message)}</div>`;
     rows=data||[];
-    $('#rlist').innerHTML=rows.length?BRANCHE.map(b=>{const r=rows.filter(x=>x.branca===b);
+    const vis=rows.filter(x=>!$('#rbr').value||x.branca===$('#rbr').value);
+    $('#rlist').innerHTML=vis.length?BRANCHE.map(b=>{const r=vis.filter(x=>x.branca===b);
       return r.length?`<div class="card"><b>📁 ${b} (${r.length})</b>${r.map(x=>`<details><summary>${esc(x.nickname)}</summary><pre style="white-space:pre-wrap;font:inherit">${esc(x.content)}</pre></details>`).join('')}</div>`:'';}).join('')
       :'<div class="card">Nessun recap per questo giorno. Premi "Genera ora" per prepararlo subito.</div>';
   };
@@ -287,15 +290,15 @@ async function recapView(){
     const z=new JSZip(); list.forEach(r=>z.file(`${r.branca}/${r.nickname}/${r.day}.txt`,r.content));
     saveBlob(await z.generateAsync({type:'blob'}),name); m.textContent='Download avviato ✅';
   };
-  $('#rd').onchange=load;
+  $('#rd').onchange=load; $('#rbr').onchange=load;
   $('#rg').onclick=async()=>{$('#rmsg').textContent='Preparo il recap...';
     const {error}=await sb.rpc('genera_recap_admin',{d:$('#rd').value}); $('#rmsg').textContent=error?error.message:'Recap pronto ✅'; load();};
-  $('#rz').onclick=()=>zip(rows,`recap_${$('#rd').value}.zip`);
+  $('#rz').onclick=()=>zip(rows.filter(x=>!$('#rbr').value||x.branca===$('#rbr').value),`recap_${$('#rd').value}.zip`);
   $('#ra').onclick=async()=>{
     $('#rmsg').textContent='Raccolgo tutti i recap...'; let all=[],from=0;
     for(;;){const {data,error}=await sb.from('recaps').select('*').order('day').range(from,from+999);
       if(error) return $('#rmsg').textContent=error.message; all=all.concat(data); if(data.length<1000) break; from+=1000;}
-    zip(all,'recap_tutti_i_giorni.zip');};
+    zip(all.filter(x=>!$('#rbr').value||x.branca===$('#rbr').value),'recap_tutti_i_giorni.zip');};
   load();
 }
 function openFile(path,name,dl){
@@ -323,15 +326,32 @@ async function accountView(){
   const {data,error}=await sb.rpc('admin_lista_account');
   if(error) return box.innerHTML=`<div class="card">${esc(error.message)}</div>`;
   const dt=x=>x?new Date(x).toLocaleString('it-IT'):'mai';
-  box.innerHTML=`<div class="card"><b>👥 Account (${data.length})</b>
-  <p class="mut">Le password non sono leggibili da nessuno, nemmeno da te: sono salvate cifrate. Se un utente la dimentica, puoi impostarne una nuova qui sotto e comunicargliela.</p>
-  ${BRANCHE.map(b=>{const r=data.filter(x=>x.branca===b);return r.length?`<b>📁 ${b} (${r.length})</b>${r.map(x=>`<p>${esc(x.nickname)}${x.is_admin?' ⭐':''}<br><span class="mut">ultimo accesso: ${dt(x.ultimo_accesso)}</span><br><button class="sec" data-r="${x.id}" data-n="${esc(x.nickname)}" style="width:auto">🔑 Reimposta password</button></p>`).join('')}`:'';}).join('')}</div>`;
-  box.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{
-    const gen=Array.from(crypto.getRandomValues(new Uint32Array(8)),n=>'abcdefghjkmnpqrstuvwxyz23456789'[n%31]).join('');
-    const pw=prompt('Nuova password per '+b.dataset.n+' (minimo 6 caratteri):',gen); if(!pw) return;
-    const {error}=await sb.rpc('admin_reimposta_password',{uid:b.dataset.r,nuova:pw});
-    alert(error?'Errore: '+error.message:'Password di '+b.dataset.n+' reimpostata.\nNuova password: '+pw+'\nComunicala all\'utente: non verrà più mostrata.');
-  });
+  box.innerHTML=`<div class="card"><b id="acn">👥 Account (${data.length})</b>
+  <p class="mut">Le password non sono leggibili da nessuno, nemmeno da te: sono salvate cifrate. Se un utente la dimentica, puoi impostarne una nuova e comunicargliela.</p>
+  ${brSel('acb')}<div id="acl"></div></div>`;
+  const draw=()=>{
+    const br=$('#acb').value, list=data.filter(x=>!br||x.branca===br), l=$('#acl');
+    l.innerHTML=BRANCHE.map(b=>{const r=list.filter(x=>x.branca===b);return r.length?`<b>📁 ${b} (${r.length})</b>${r.map(x=>`<p>${esc(x.nickname)}${x.is_admin?' ⭐':''}<br><span class="mut">ultimo accesso: ${dt(x.ultimo_accesso)}</span><br><button class="sec" data-r="${x.id}" data-n="${esc(x.nickname)}" style="width:auto">🔑 Reimposta password</button>${x.id===me.id?'':` <button class="sec" data-del="${x.id}" data-n="${esc(x.nickname)}" style="width:auto">🗑️ Elimina</button>`}</p>`).join('')}`:'';}).join('')||'<p class="mut">Nessun account in questa branca.</p>';
+    l.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{
+      const gen=Array.from(crypto.getRandomValues(new Uint32Array(8)),n=>'abcdefghjkmnpqrstuvwxyz23456789'[n%31]).join('');
+      const pw=prompt('Nuova password per '+b.dataset.n+' (minimo 6 caratteri):',gen); if(!pw) return;
+      const {error}=await sb.rpc('admin_reimposta_password',{uid:b.dataset.r,nuova:pw});
+      alert(error?'Errore: '+error.message:'Password di '+b.dataset.n+' reimpostata.\nNuova password: '+pw+'\nComunicala all\'utente: non verrà più mostrata.');
+    });
+    l.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{
+      const n=b.dataset.n, id=b.dataset.del;
+      if(prompt('ATTENZIONE: stai eliminando DEFINITIVAMENTE l\'account di '+n+' con tutti i suoi post, commenti, reazioni e file.\nPer confermare scrivi il suo nickname:')!==n) return;
+      const {error}=await sb.rpc('admin_elimina_account',{uid:id});
+      if(error) return alert('Errore: '+error.message);
+      for(const bk of ['media','riservati']){
+        const {data:fl}=await sb.storage.from(bk).list(id,{limit:1000});
+        if(fl&&fl.length) await sb.storage.from(bk).remove(fl.map(f=>`${id}/${f.name}`));
+      }
+      data.splice(data.findIndex(x=>x.id===id),1); $('#acn').textContent=`👥 Account (${data.length})`; draw();
+      alert('Account di '+n+' eliminato.');
+    });
+  };
+  $('#acb').onchange=draw; draw();
 }
 
 async function adminView(){
@@ -343,8 +363,11 @@ async function adminView(){
 }
 function archivio(users){
   $('#admbox').innerHTML=`<div class="card"><b>Archivio admin</b>
+  ${brSel('ab')}
   <label class="mut">Post di un giorno</label><input type="date" id="dd" value="${today}">
-  <label class="mut">Tutto di un utente</label><select id="us"><option value="">Scegli un utente</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select></div><div id="fd"></div>`;
+  <label class="mut">Tutto di un utente</label><select id="us">${userOpts(users,'','Scegli un utente')}</select></div><div id="fd"></div>`;
+  admBr='';
+  $('#ab').onchange=()=>{admBr=$('#ab').value;$('#us').innerHTML=userOpts(users,admBr,'Scegli un utente');loadFeed($('#dd').value,'#fd');};
   $('#dd').onchange=()=>{$('#us').value='';loadFeed($('#dd').value,'#fd');};
   $('#us').onchange=()=>{const v=$('#us').value; v?loadFeed(null,'#fd',v):loadFeed($('#dd').value,'#fd');};
   loadFeed(today,'#fd');
@@ -352,9 +375,10 @@ function archivio(users){
 async function riservati(users){
   $('#admbox').innerHTML=`<div class="card"><b>📎 Invia un file a un utente</b>
   <p class="mut">Solo il destinatario (e gli admin) potrà vederlo e scaricarlo. Massimo 50 MB.</p>
-  <select id="ru"><option value="">Scegli il destinatario</option>${users.map(u=>`<option value="${u.id}">${esc(u.nickname)} (${esc(u.branca)})</option>`).join('')}</select>
+  ${brSel('rb')}<select id="ru">${userOpts(users,'','Scegli il destinatario')}</select>
   <input id="rf" type="file"><input id="rn" placeholder="Nota (facoltativa)" maxlength="200">
   <button id="rs">Invia</button><p id="rm" class="mut"></p></div><div id="rl"></div>`;
+  $('#rb').onchange=()=>{$('#ru').innerHTML=userOpts(users,$('#rb').value,'Scegli il destinatario');};
   let rows=[];
   const list=async()=>{
     const {data}=await sb.from('user_files').select('*,profiles!user_files_user_id_fkey(nickname)').order('created_at',{ascending:false});
