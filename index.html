@@ -3,7 +3,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
 <meta name="theme-color" content="#6e1010">
-<meta name="apple-mobile-web-app-title" content="Avvento">
+<meta name="apple-mobile-web-app-title" content="Maranathapp">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
@@ -50,16 +50,31 @@ body::before{background-size:220px 220px;opacity:.9;animation:tw 4s ease-in-out 
 body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in-out infinite alternate-reverse;background-image:radial-gradient(6px 6px at 50px 90px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(4px 4px at 140px 40px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(7px 7px at 250px 150px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(4px 4px at 110px 250px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(5px 5px at 280px 270px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(3px 3px at 200px 230px,#ffffff 0 30%,#ffffff77 55%,transparent),radial-gradient(3px 3px at 20px 200px,#ffe08a 0 30%,#ffe08a77 55%,transparent),radial-gradient(4px 4px at 260px 30px,#ffe08a 0 30%,#ffe08a77 55%,transparent)}
 @keyframes tw{from{opacity:.45}to{opacity:1}}
 .modal{background:radial-gradient(circle at 50% 30%,#3a0d0dd9,#000000e6)}
-.gbox{position:relative;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column;margin-top:34px}
-.glid{position:absolute;z-index:3;top:-26px;left:-8px;right:-8px;height:52px;border-radius:14px 14px 5px 5px;transform-origin:left bottom;
- background:radial-gradient(circle,#ffffff30 2px,transparent 3px) 0 0/20px 20px,linear-gradient(#e53935,#b71c1c);box-shadow:0 6px 14px #0007;animation:lid 1s .4s cubic-bezier(.55,-.25,.6,1) forwards}
-.glid::before,.gbody::before{content:"";position:absolute;left:50%;top:0;bottom:0;width:38px;transform:translateX(-50%);background:linear-gradient(90deg,#d9a520,#fbd965,#d9a520)}
-.gbow{position:absolute;z-index:4;left:50%;top:-34px;width:104px;height:46px;transform:translateX(-50%)}
-.gbow i{position:absolute;top:0;width:48px;height:36px;border:10px solid #f4c542;border-radius:50%;box-shadow:inset 0 0 0 2px #d9a52099}
-.gbow i:nth-child(1){left:0;transform:rotate(-22deg)}.gbow i:nth-child(2){right:0;transform:rotate(22deg)}
-.gbow b{position:absolute;left:50%;top:16px;width:24px;height:24px;margin-left:-12px;border-radius:7px;background:linear-gradient(#fbd965,#d9a520)}
-.gbody{position:relative;flex:1;min-height:0;overflow:auto;border-radius:16px;padding:16px 14px;box-shadow:0 14px 34px #000a;
- background:radial-gradient(circle,#ffffff30 2px,transparent 3px) 0 0/20px 20px,linear-gradient(90deg,#b71c1c,#d32f2f 50%,#b71c1c)}
+.dbox{position:relative;width:100%;max-width:480px;max-height:90vh;display:flex;flex-direction:column}
+.dfront{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:12px;height:58px;border-radius:12px 12px 6px 6px;background:linear-gradient(#5d7a35,#3f5524);border:2px solid #c9d9a4;box-shadow:0 6px 14px #0007;color:#fff;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.7rem;font-weight:600}
+.dfront .knob{width:26px;height:26px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#d9a520 60%,#9a7210);box-shadow:0 2px 4px #0008}
+.dfront small{font-size:.8rem;opacity:.85;letter-spacing:.1em;text-transform:uppercase}
+.dbody{position:relative;z-index:1;flex:1;min-height:0;overflow:auto;margin:-8px 6px 0;border-radius:0 0 14px 14px;padding:22px 12px 14px;background:repeating-linear-gradient(90deg,#3b4d22 0 14px,#41562a 14px 28px);border:2px solid #2c3a18;border-top:0;box-shadow:inset 0 10px 14px #0006,0 14px 34px #000a;animation:dOut .8s cubic-bezier(.2,.8,.3,1) both}
+@keyframes dOut{from{transform:translateY(-85%);opacity:0}30%{opacity:1}to{transform:none;opacity:1}}
+/* calendario dell'avvento */
+.cal{background:#4b6128;border-radius:18px;padding:14px 10px;margin:12px 0;box-shadow:0 4px 14px #0006;color:#fff;text-align:center}
+.cal h3{font-family:'Cormorant Garamond',Georgia,serif;margin:2px 0 4px;font-size:1.4rem;letter-spacing:.06em}
+.cal p{margin:0 0 10px;font-size:.9rem;color:#e6efd0}
+.cgrid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.dz{position:relative;aspect-ratio:3/4;border-radius:8px;perspective:400px;cursor:default;user-select:none;-webkit-tap-highlight-color:transparent}
+.dz .in{position:absolute;inset:0;border-radius:8px;background:#e9f0d6;box-shadow:inset 0 5px 8px #0005;display:flex;align-items:flex-end;justify-content:center;font-size:clamp(1.2rem,6.4vw,2rem);padding-bottom:12%}
+.dz .in img{width:80%;margin:0;border-radius:0}
+.dz .fr{position:absolute;inset:0;border-radius:8px;display:flex;align-items:flex-start;justify-content:flex-start;padding:4px 0 0 6px;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(.95rem,4.2vw,1.25rem);line-height:1;background:linear-gradient(#587433,#3b4d22);color:#fff;box-shadow:0 2px 4px #0006;transition:transform .7s cubic-bezier(.3,1.3,.5,1);transform-origin:50% 0}
+.dz:nth-child(even) .fr{background:linear-gradient(#b9d08c,#9db873);color:#fff;text-shadow:0 1px 2px #0006}
+.dz .fr::after{content:"";position:absolute;left:50%;bottom:9px;width:11px;height:11px;margin-left:-5px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff3b0,#d9a520 60%,#9a7210)}
+.dz .fr small{font-size:.5em;margin-left:3px;opacity:.9;align-self:flex-end}
+.dz.open .fr{transform:translateY(78%) rotateX(-28deg)}
+.dz.past{cursor:default}
+.dz.lock{opacity:.5;filter:saturate(.5)}
+.dz.today{cursor:pointer;animation:glow 1.6s ease-in-out infinite}
+.dz.shake{animation:shk .4s}
+@keyframes glow{0%,100%{box-shadow:0 0 0 2px #ffe08a,0 0 8px #ffe08a99}50%{box-shadow:0 0 0 3px #fff,0 0 18px #ffe08a}}
+@keyframes shk{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .paper{position:relative;z-index:1;background:var(--card);color:#2b2b2b;border-radius:12px;padding:16px;box-shadow:0 4px 14px #0005;animation:rise .7s 1s both}
 .paper h3{font-family:'Cormorant Garamond',Georgia,serif;text-align:center;font-size:1.4rem;margin:2px 0 10px}
 .paper h3::after{content:"✦ ✦ ✦";display:block;font-size:.6rem;letter-spacing:.4em;color:#c9a227;margin-top:2px}
@@ -69,7 +84,7 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 @keyframes rise{from{opacity:0;transform:translateY(26px) scale(.95)}to{opacity:1;transform:none}}
 @keyframes slide{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .tabs{flex-wrap:wrap}.tabs>*{min-width:45%}
-@media(prefers-reduced-motion:reduce){body::before,body::after{animation:none}.glid{display:none}.paper,.pg{animation:none}}
+@media(prefers-reduced-motion:reduce){body::before,body::after{animation:none}.dbody,.dz.today{animation:none}.dz .fr{transition:none}.paper,.pg{animation:none}}
 .chips{margin:6px 0}.chip{display:inline-block;background:#fff;border:1px solid #cdbd9f;border-radius:14px;padding:3px 10px;margin:3px 4px 3px 0;font-size:.82rem}.chip a{cursor:pointer;margin-left:6px;color:#b71c1c;font-weight:700}
 audio{width:100%;margin-top:8px}
 </style></head><body><main id="app"></main>
@@ -95,14 +110,14 @@ async function init(){
   me=data; me?mainView():onboardView();
 }
 
-const mail=n=>n.trim().toLowerCase()+'@diario-avvento.app';
+const mail=n=>n.trim().toLowerCase()+'@diario-avvento.app'; // NON cambiare: è il dominio interno con cui sono stati creati gli account esistenti
 const CAPI_MAX=9, NOCAPO='Mi dispiace, non sei un capo!';
 const capiFull=async()=>{const {data}=await sb.rpc('capi_count');return data>=CAPI_MAX;};
 const OPTS='<option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option><option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option>';
 function scene(inner){
   const t=demo||today, SUN=['2026-11-29','2026-12-06','2026-12-13','2026-12-20'], col=['#9a6fd8','#9a6fd8','#f0a0c4','#9a6fd8'];
   return `<div class="scene"><img class="tree" alt="Calendario dell'Avvento" src="${TREE}">
-  <div class="hello">Benvenuto</div><h1>Diario dell'Avvento</h1>${inner}
+  <div class="hello">Benvenuto</div><h1>Maranathapp</h1>${inner}
   <div class="wr">${col.map((c,i)=>`<div class="cd"><span>${t>=SUN[i]?'🔥':''}</span><b style="background:${c}"></b></div>`).join('')}</div><div class="ring"></div></div>`;
 }
 function loginView(){
@@ -160,9 +175,31 @@ async function mainView(){
   const c=await sb.from('challenges').select('*').eq('day',today).maybeSingle(); challenge=c.data;
   const p=await sb.from('posts').select('id').eq('day',today).eq('user_id',me.id).maybeSingle(); myPost=p.data;
   if(!challenge){ $('#body').innerHTML='<div class="card">Oggi non c\'è ancora una sfida.</div>'; return; }
-  if(!myPost){ $('#body').innerHTML=`<div class="card"><b>Completa la sfida per vedere i post degli altri</b>
-    <button id="open">Apri la sfida di oggi</button></div>`; $('#open').onclick=()=>challengeModal(); challengeModal(); }
+  if(!myPost) calendarView();
   else loadFeed(today);
+}
+
+
+// ===== Calendario dell'Avvento =====
+// Per usare i tuoi disegni al posto delle emoji scrivi un percorso immagine, es. '12-05':'img/05.png'
+const CAL_ART={'11-30':'🐻‍❄️','12-01':'🕯️','12-02':'🌺','12-03':'⛸️','12-04':'🔔','12-05':'🎀','12-06':'☕','12-07':'⛄','12-08':'🎍','12-09':'🍪','12-10':'🌿','12-11':'🎐','12-12':'🍵','12-13':'💂','12-14':'🔮','12-15':'🍃','12-16':'🌰','12-17':'🎈','12-18':'🍒','12-19':'🌲','12-20':'☕','12-21':'🎄','12-22':'🍭','12-23':'🪩','12-24':'👼','12-25':'🛻'};
+function calDays(){
+  const a=['2026-11-30']; for(let d=1;d<=25;d++) a.push('2026-12-'+String(d).padStart(2,'0'));
+  if(today<a[0]&&today>=START) a.unshift(today); // solo in PROVA: aggiunge il giorno di oggi
+  return a;
+}
+function calendarView(){
+  const art=d=>{const v=CAL_ART[d.slice(5)]||'🎁';return /^img\//.test(v)?`<img src="${v}" alt="">`:v;};
+  const cells=calDays().map(d=>{
+    const st=d<today?'past open':d===today?'today':'lock';
+    return `<div class="dz ${st}" data-d="${d}"><div class="in">${art(d)}</div><div class="fr">${+d.slice(8)}${d.startsWith('2026-11')?'<small>nov</small>':''}</div></div>`;}).join('');
+  $('#body').innerHTML=`<div class="cal"><h3>Calendario dell'Avvento</h3><p>Tocca la casella di oggi per aprire il cassetto e scoprire la sfida. Per vedere i post degli altri devi prima completarla!</p><div class="cgrid">${cells}</div></div>`;
+  document.querySelectorAll('.dz').forEach(el=>el.onclick=()=>{
+    if(el.classList.contains('lock')||el.classList.contains('past')){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');return;}
+    if(document.querySelector('.modal')) return;
+    el.classList.add('open'); el.classList.remove('today');
+    setTimeout(()=>{challengeModal();el.classList.add('today');},matchMedia('(prefers-reduced-motion:reduce)').matches?0:750);
+  });
 }
 
 const MAXF=10, MAXC=4, MAXMB=50;
@@ -201,7 +238,7 @@ async function uploadFiles(files,prefix){
 function challengeModal(edit){
   let step=edit?2:0; const m=document.createElement('div'); m.className='modal';
   const files=[], keep=[...(edit?.post_media||[])], removed=[];
-  m.innerHTML=`<div class="gbox"><div class="glid"><div class="gbow"><i></i><i></i><b></b></div></div><div class="gbody"><div class="paper">
+  m.innerHTML=`<div class="dbox"><div class="dfront"><small>${(edit?edit.day:today)<'2026-12'?'nov':'dic'}</small><span>${+(edit?edit.day:today).slice(8)}</span><i class="knob"></i></div><div class="dbody"><div class="paper">
   <div class="pg"><h3>📖 Vangelo del giorno</h3><p class="long">${esc(challenge.gospel||'Il vangelo di oggi arriverà presto.')}</p></div>
   <div class="pg"><h3>💭 Commento</h3><p class="long">${esc(challenge.commentary||'Il commento di oggi arriverà presto.')}</p></div>
   <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3><p style="text-align:center">${esc(challenge.description)}</p>
