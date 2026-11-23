@@ -66,7 +66,8 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 .dz .in i{font-style:normal;color:#fffbe0;font-size:clamp(.8rem,3.6vw,1.2rem);text-shadow:0 0 8px #fff}
 .dz .fr{position:absolute;inset:0;border-radius:9px;overflow:hidden;background:linear-gradient(160deg,#41572a,#2a3a16);box-shadow:0 2px 4px #0008,inset 0 0 0 1px #ffffff18;transition:transform .8s cubic-bezier(.3,1.25,.5,1);transform-origin:50% 100%;backface-visibility:hidden}
 .dz:nth-child(even) .fr{background:linear-gradient(160deg,#c3d89b,#9fba74)}
-.dz .n{position:absolute;left:5px;top:3px;z-index:2;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(.95rem,4.2vw,1.3rem);line-height:1;color:#fff;text-shadow:0 1px 2px #0007}
+.dz:nth-child(even) .n{color:#243314;text-shadow:0 1px 0 #ffffff80}
+.dz .n{position:absolute;left:5px;top:3px;z-index:2;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(.95rem,4.2vw,1.3rem);line-height:1;color:#fff6dc;text-shadow:0 1px 2px #0007}
 .dz .n small{font-size:.5em;margin-left:2px;letter-spacing:.04em}
 .dz .art{position:absolute;left:7%;right:7%;top:27%;bottom:5%}
 .dz .art svg,.dz .art img{display:block;width:100%;height:100%;margin:0;border-radius:0;filter:drop-shadow(0 1px 1.5px #0006)}
@@ -215,6 +216,35 @@ function calendarView(){
   });
 }
 
+// ===== Filtro parole vietate =====
+// Per aggiungere o togliere parole modifica le liste qui sotto (una parola o frase tra virgolette, separate da virgola).
+// Il controllo è sulla parola intera, senza distinguere maiuscole/accenti: "successo" NON contiene "cesso".
+const PAROLE_VIETATE=[
+  // Imprecazioni e Turpiloquio Comune
+  "cazzo","cazzi","cazzata","cazzate","cazzone","incazzare","incazzato","scazzato","merda","merde","merdaccia","merdoso","smerdare","vaffanculo","fanculo","culo","culi","culattone","leccaculo","paraculo","rompiculo","stronzo","stronzi","stronza","stronzata","stronzate","puttana","puttane","puttanata","puttaniere","figlio di puttana","troia","troie","troiata","troiaio","zoccola","zoccole","mignotta","mignotte","bagascia","baldracca","coglione","coglioni","coglionata","rompicoglioni","scoglionato","minchia","minchiata","minchione","fica","figa","fregna","sborra","sborrare","segaiolo","bastardo","bastardi","bastarda","porca vacca","porca miseria","porca puttana","porca troia","pezzo di merda","testa di cazzo","testa di minchia",
+  // Bestemmie ed Espressioni Blasfeme
+  "porco dio","dio porco","dio cane","cane dio","dio boia","boia dio","dio ladro","dio bastardo","dio schifoso","dio merda","dio cazzo","dio serpente","dio bestia","dio impestato","dio lurido","porca madonna","madonna puttana","madonna troia","madonna cagna","madonna impestata","madonna schifosa","madonna ladra","madonna bastarda","porco cristo","cristo cane","cristo ladro","cristo morto","porco gesù","gesù cane","porco clero",
+  // Termini Discriminatori, Razzisti e Xenofobi
+  "negro","negri","negra","negraccio","negretto","sporco negro","muso nero","scimmia","vu cumprà","zingaro","zingari","zingaraccia","zingarata","terrone","terroni","terronata","polentone","polentoni","crucco","crucchi","mangiarane","mangiaspaghetti","musulmano di merda","ebreo di merda","immigrato di merda",
+  // Insulti Omofobi, Transfobici e Sessisti
+  "frocio","froci","frociaggine","frocione","ricchione","ricchioni","finocchio","finocchi","checca","checche","checca isterica","lesbica di merda","lesbicaccia","travone","viado","invertito","pederasta","cagna","cagne","vacca","vacche","sgualdrina","bocchinara","pompinara","succhiacazzi","troione",
+  // Termini Abilisti e Offese sulle Condizioni Fisiche/Mentali
+  "handicappato","handicappati","ritardato","ritardati","ritardata","mongoloide","mongoloidi","spastico","spastici","deficiente","idiota","imbecille","cretino","cerebroleso","psicopatico","ciccione","cicciona","sfigato","sfigata","cessa","cesso",
+  // Incitamento all'Odio, Autolesionismo e Minacce
+  "ammazzati","suicidati","ucciditi","crepaci","ti ammazzo","ti uccido","ti spacco la faccia","ti mando all'ospedale","ti vengo a cercare","ti sgozzo","ti brucio","ti venga un cancro","stupro","stuprare","ti stupro","pedofilo","pedofilia",
+];
+// Parole che in alcuni contesti sono innocue (Vangelo, preghiere, descrizioni). Mettendo false NON vengono più bloccate.
+const BLOCCA_DUBBIE=true;
+const PAROLE_DUBBIE=["dio fa","cristo santo","gesù cristo","santi in paradiso","giudeo","extracomunitario","clandestino","marocchino","albanese","rumeno","camionista","trans","prostituta","down","storpio","storpi","zoppo","cieco","sordo","malato mentale","schizofrenico","autistico","obeso","balena","elefante","anoressica","nano","nana","muori","cancro","tumore","aids","ebola"];
+const _LEET={'@':'a','4':'a','0':'o','1':'i','3':'e','5':'s','$':'s'};
+const normTxt=t=>' '+String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .split(/\s+/).map(w=>/[a-z]/.test(w)?w.replace(/[@40135$]/g,c=>_LEET[c]):w).join(' ')
+  .replace(/[^a-z]+/g,' ').replace(/(.)\1+/g,'$1').trim()+' ';
+const _BAN=new Map();
+(BLOCCA_DUBBIE?PAROLE_VIETATE.concat(PAROLE_DUBBIE):PAROLE_VIETATE).forEach(w=>{const n=normTxt(w);if(n.trim()) _BAN.set(n,w);});
+function paroleVietate(t){const n=normTxt(t),out=[];_BAN.forEach((orig,k)=>{if(n.includes(k)&&!out.includes(orig)) out.push(orig);});return out;}
+const msgVietate=(p,az='pubblicare')=>`Non puoi ${az}: il testo contiene ${p.length>1?'queste parole non consentite':'questa parola non consentita'}: ${p.map(w=>'«'+w+'»').join(', ')}. Modificalo e riprova.`;
+
 const MAXF=10, MAXC=4, MAXMB=50;
 const kindOf=f=>/^video/.test(f.type)||/\.(mp4|mov|webm|m4v)$/i.test(f.name)?'video':/^audio/.test(f.type)||/\.(mp3|m4a|wav|ogg|oga|aac|opus|amr)$/i.test(f.name)?'audio':'image';
 const ICON={image:'🖼️',video:'🎬',audio:'🎵'};
@@ -274,7 +304,9 @@ function challengeModal(edit){
   $('#cl').onclick=()=>m.remove(); $('#bk').onclick=()=>go(step-1); $('#nx').onclick=()=>go(step+1); go(step);
   $('#sd').onclick=async()=>{
     const text=$('#tx').value.trim(), msg=$('#msg'), btn=$('#sd');
+    msg.style.cssText='';
     if(!text&&!files.length&&!keep.length) return msg.textContent='Aggiungi un testo, una foto, un video o un audio.';
+    const bad=paroleVietate(text); if(bad.length){msg.style.cssText='color:#b3201f;font-weight:700';return msg.textContent=msgVietate(bad);}
     btn.disabled=true; msg.textContent='Salvataggio in corso (i file grandi richiedono un po\')...';
     let up=[]; try{up=await uploadFiles(files,today);}catch(e){btn.disabled=false;return msg.textContent=e.message;}
     const undo=async()=>{if(up.length) await sb.storage.from('media').remove(up.map(x=>x.path)); btn.disabled=false;};
@@ -320,6 +352,7 @@ async function loadFeed(day,sel='#body'){
   box.querySelectorAll('[data-c]').forEach(b=>b.onclick=async()=>{
     const id=b.dataset.c, t=$('#c'+id).value.trim(), fs=pending[id]||[];
     if(!t&&!fs.length) return;
+    const bad=paroleVietate(t); if(bad.length) return alert(msgVietate(bad,'inviare il commento'));
     b.disabled=true; let up=[];
     try{up=await uploadFiles(fs,'c'+today);}catch(e){b.disabled=false;return alert(e.message);}
     const {data:c,error}=await sb.from('comments').insert({post_id:id,user_id:me.id,text_content:t}).select('id').single();
