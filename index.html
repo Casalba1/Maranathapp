@@ -56,6 +56,30 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 .dfront small{font-size:.8rem;opacity:.85;letter-spacing:.1em;text-transform:uppercase}
 .dbody{position:relative;z-index:1;flex:1;min-height:0;overflow:auto;margin:-8px 6px 0;border-radius:0 0 14px 14px;padding:22px 12px 14px;background:repeating-linear-gradient(90deg,#3b4d22 0 14px,#41562a 14px 28px);border:2px solid #2c3a18;border-top:0;box-shadow:inset 0 10px 14px #0006,0 14px 34px #000a;animation:dOut .8s cubic-bezier(.2,.8,.3,1) both}
 @keyframes dOut{from{transform:translateY(-85%);opacity:0}30%{opacity:1}to{transform:none;opacity:1}}
+
+/* intestazione */
+.top{align-items:center;gap:8px}
+.top .brand{flex:1;text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.6rem,4.5vmin,2.4rem);letter-spacing:.06em;line-height:1;color:#fff6dc;text-shadow:0 2px 6px #0006}
+.top button{flex:0 0 auto;width:auto;padding:8px 14px;margin:0}
+/* countdown di lancio */
+.lc{display:flex;flex-direction:column;align-items:center;gap:6px;margin:2px 0 8px}
+.lc .t{font-size:clamp(.78rem,2vmin,1rem);color:#f3e7c4;letter-spacing:.03em}
+.lc .u{display:flex;gap:clamp(6px,1.4vmin,12px)}
+.lc .u div{min-width:clamp(54px,9vmin,90px);background:#00000033;border:1px solid #ffe08a66;border-radius:10px;padding:6px 4px;text-align:center}
+.lc .u b{display:block;font:600 clamp(1.4rem,5vmin,2.7rem)/1 'Cormorant Garamond',Georgia,serif;color:#ffe9a8}
+.lc .u small{font-size:clamp(.58rem,1.5vmin,.8rem);letter-spacing:.1em;text-transform:uppercase;color:#e6efd0}
+/* calendario a tutto schermo */
+body.calmode main{max-width:none;min-height:100vh;min-height:100dvh;padding:10px 14px 14px;display:flex;flex-direction:column}
+body.calmode #body{flex:1;min-height:0;display:flex;flex-direction:column}
+body.calmode .cal{flex:1;min-height:340px;display:flex;flex-direction:column;margin:8px 0 0;padding:12px 12px 14px}
+body.calmode .cal h3{font-size:clamp(1.1rem,3.2vmin,1.9rem);margin:0 0 6px}
+body.calmode .cal p{font-size:clamp(.8rem,2vmin,1rem);margin:0 0 8px}
+body.calmode .cgrid{flex:1;min-height:0;padding:0;grid-template-columns:repeat(var(--cols,7),1fr);grid-template-rows:repeat(var(--rows,4),1fr);gap:clamp(5px,1.1vmin,12px)}
+body.calmode .dz{aspect-ratio:auto;min-height:0}
+body.calmode .dz .n{font-size:clamp(1rem,3.4vmin,2rem);left:7px;top:5px}
+body.calmode .dz .in i{font-size:clamp(1rem,4vmin,2rem)}
+body.calmode .dz.today .tag{font-size:clamp(.55rem,1.6vmin,.85rem);bottom:-10px}
+.fill{display:none;align-items:center;justify-content:center;border-radius:9px;background:#00000026;color:#ffe9a8;font-family:'Cormorant Garamond',Georgia,serif;font-size:clamp(.9rem,3vmin,1.7rem);letter-spacing:.08em;text-align:center}
 /* calendario dell'avvento */
 .cal{background:#4b6128;border-radius:18px;padding:14px 10px;margin:12px 0;box-shadow:0 4px 14px #0006;color:#fff;text-align:center}
 .cal h3{font-family:'Cormorant Garamond',Georgia,serif;margin:2px 0 4px;font-size:1.4rem;letter-spacing:.06em}
@@ -179,13 +203,15 @@ function onboardView(){
 
 async function mainView(){
   adminOpen=false;
+  document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer);
   const inRange=today>=START&&today<=END;
-  app.innerHTML=`<div class="row top"><b style="align-self:center">👋 ${esc(me.nickname)} <span class="mut">(${esc(me.branca)})</span></b>
+  app.innerHTML=`<div class="row top"><b class="brand">Maranathapp</b>
   ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
   $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
   loadMyFiles(); countdown();
-  if(me.is_admin) $('#adm').onclick=()=>{if(adminOpen) return mainView(); adminOpen=true; $('#adm').textContent='← Post'; adminView();};
-  if(!inRange){ $('#body').innerHTML=(today>END?'<div class="card">Le sfide sono concluse: grazie per aver partecipato! 🎄</div>':'<div class="card">Le sfide partono il 30 novembre alle 6:00 e finiscono il 25 dicembre. A presto! 🎄</div>'); return; }
+  if(me.is_admin) $('#adm').onclick=()=>{if(adminOpen) return mainView(); adminOpen=true; $('#adm').textContent='← Post'; document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer); adminView();};
+  if(today>END){ $('#body').innerHTML='<div class="card">Le sfide sono concluse: grazie per aver partecipato! 🎄</div>'; return; }
+  if(today<START){ calendarView(); return; } // prima del lancio: calendario bloccato con il countdown
   const c=await sb.from('challenges').select('*').eq('day',today).maybeSingle(); challenge=c.data;
   const p=await sb.from('posts').select('id').eq('day',today).eq('user_id',me.id).maybeSingle(); myPost=p.data;
   if(!challenge){ $('#body').innerHTML='<div class="card">Oggi non c\'è ancora una sfida.</div>'; return; }
@@ -202,12 +228,42 @@ function calDays(){
   if(today<a[0]&&today>=START) a.unshift(today); // solo in PROVA: aggiunge il giorno di oggi
   return a;
 }
+const LANCIO=new Date('2026-11-30T06:00:00+01:00'); // inizio della sfida: 30 novembre ore 6:00 (ora italiana)
+let lcTimer;
+function launchCountdown(){
+  clearInterval(lcTimer);
+  const tick=()=>{
+    const box=document.getElementById('lc'); if(!box){clearInterval(lcTimer);return;}
+    const ms=LANCIO-Date.now();
+    if(ms<=0){clearInterval(lcTimer);box.remove();if(!document.querySelector('.modal')) location.reload();return;}
+    const d=Math.floor(ms/864e5),h=Math.floor(ms%864e5/36e5),m=Math.floor(ms%36e5/6e4),sc=Math.floor(ms%6e4/1e3),p=n=>String(n).padStart(2,'0');
+    box.innerHTML=`<div class="t">⏳ Tempo rimasto all'inizio della sfida · 30 novembre, ore 6:00</div><div class="u"><div><b>${d}</b><small>giorni</small></div><div><b>${p(h)}</b><small>ore</small></div><div><b>${p(m)}</b><small>min</small></div><div><b>${p(sc)}</b><small>sec</small></div></div>`;
+  };
+  tick(); lcTimer=setInterval(tick,1000);
+}
 function calendarView(){
+  document.body.classList.add('calmode');
   const art=d=>{const v=CAL_ART[d.slice(5)]||CAL_ART['12-21'];return /^img\//.test(v)?`<img src="${v}" alt="">`:`<svg viewBox="0 0 64 64" aria-hidden="true">${v}</svg>`;};
   const cells=calDays().map(d=>{
     const st=d<today?'past open':d===today?'today':'lock';
     return `<div class="dz ${st}" data-d="${d}"><div class="in"><i>✦</i></div><div class="fr"><span class="n">${+d.slice(8)}${d.startsWith('2026-11')?'<small>nov</small>':''}</span><div class="art">${art(d)}</div></div><span class="tag">oggi</span></div>`;}).join('');
-  $('#body').innerHTML=`<div class="cal"><h3>Calendario dell'Avvento</h3><p>Tocca la casella di oggi per aprire il cassetto e scoprire la sfida. Per vedere i post degli altri devi prima completarla!</p><div class="cgrid">${cells}</div></div>`;
+  const days=calDays(), n=days.length, prima=Date.now()<LANCIO;
+  const info=days.includes(today)?'Tocca la casella di oggi per aprire il cassetto e scoprire la sfida.':'Ogni giorno, dalle 6:00, si aprirà una nuova casella.';
+  $('#body').innerHTML=`<div class="cal"><h3>Calendario dell'Avvento</h3>${prima?'<div class="lc" id="lc"></div>':''}<p>${info}</p><div class="cgrid" id="cg">${cells}<div class="fill" id="fill"></div></div></div>`;
+  if(prima) launchCountdown();
+  // il calendario riempie lo schermo: scelgo colonne/righe in modo che le caselle abbiano una forma ben proporzionata
+  const grid=$('#cg'), fill=$('#fill');
+  const fit=()=>{
+    if(!grid.isConnected){window.onresize=null;return;}
+    const W=grid.clientWidth, H=grid.clientHeight; if(!W||!H) return;
+    let best=5, bs=1e9;
+    for(let c=3;c<=10;c++){const r=Math.ceil(n/c), sc=Math.abs(Math.log(((W/c)/(H/r))/.85))+.04*(r*c-n); if(sc<bs){bs=sc;best=c;}}
+    const r=Math.ceil(n/best), left=r*best-n;
+    grid.style.setProperty('--cols',best); grid.style.setProperty('--rows',r);
+    fill.style.display=left?'flex':'none'; fill.style.gridColumn='span '+Math.max(left,1);
+    fill.innerHTML=left>1?'<span>✦ Buon Avvento ✦</span>':'<span>✦</span>';
+  };
+  window.onresize=fit; requestAnimationFrame(fit);
   document.querySelectorAll('.dz').forEach(el=>el.onclick=()=>{
     if(el.classList.contains('lock')||el.classList.contains('past')){el.classList.remove('shake');void el.offsetWidth;el.classList.add('shake');return;}
     if(document.querySelector('.modal')) return;
