@@ -64,14 +64,27 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 .zz h3{font-family:'Cormorant Garamond',Georgia,serif;font-size:1.9rem;margin:6px 0}
 .zz p{font-size:1.05rem;margin:0 0 6px}.zz .stars{color:#ffe08a;letter-spacing:.4em;margin:6px 0 10px}
 /* patto */
-.patto{width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;background:#fbf1dc;color:#2b2b2b;border-radius:18px;border:3px solid #c62f2f;box-shadow:0 0 0 3px #e0b04a,0 14px 40px #000b;overflow:hidden}
-.patto .hd{background:linear-gradient(#d83a35,#a82020);color:#fff6dc;text-align:center;padding:12px 10px 8px;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.3rem;font-weight:600;letter-spacing:.04em}
+.patto{font-family:'Bookman Old Style','Bookman','ITC Bookman','URW Bookman','Bookman URW',Georgia,'Times New Roman',serif;width:100%;max-width:520px;max-height:92vh;display:flex;flex-direction:column;background:#fbf1dc;color:#2b2b2b;border-radius:18px;border:3px solid #c62f2f;box-shadow:0 0 0 3px #e0b04a,0 14px 40px #000b;overflow:hidden}
+.patto .hd{background:linear-gradient(#d83a35,#a82020);color:#fff6dc;text-align:center;padding:12px 10px 8px;font-family:inherit;font-size:1.3rem;font-weight:600;letter-spacing:.04em}
 .patto .lights{height:14px;background:radial-gradient(circle at 10px 5px,#ffd84a 4px,transparent 5px) 0 0/28px 14px,radial-gradient(circle at 24px 8px,#5ec26a 4px,transparent 5px) 0 0/28px 14px,radial-gradient(circle at 17px 3px,#4aa3df 4px,transparent 5px) 0 0/28px 14px,#a82020}
 .patto .bd{flex:1;min-height:80px;overflow:auto;padding:14px 18px;white-space:pre-wrap;font-size:.95rem;line-height:1.5}
 .patto .ft{padding:8px 16px 14px;border-top:2px dashed #c62f2f55;background:#f6ead6}
 .patto .ck{display:flex;align-items:flex-start;gap:10px;margin:4px 0 6px;font-weight:600}
 .patto .ck input{width:22px;height:22px;margin:2px 0 0;padding:0;flex:none;accent-color:#c62f2f}
 .patto button:disabled{opacity:.5;cursor:not-allowed}
+
+/* banner modalità speciali, nuvola di parole */
+.note{border-radius:10px;padding:8px 10px;margin:8px 0;font-size:.92rem;text-align:left;line-height:1.35}
+.note.an{background:#2b3a66;color:#fff6dc;border:1px solid #ffe08a}
+.note.mt{background:#e8f4fb;color:#1c3f57;border:1px solid #4aa3df}
+.wc{text-align:center;border:2px solid #4aa3df}
+.wc h3{margin:0 0 2px;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.5rem}
+.cloud{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:4px 14px;padding:10px 2px;line-height:1.1}
+.cloud span{font-weight:700;display:inline-block;font-family:'Cormorant Garamond',Georgia,serif}
+.cloud.anim span{animation:pop .55s both}
+@keyframes pop{from{transform:scale(.3);opacity:0}}
+.ck2{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:600}
+.ck2 input{width:22px;height:22px;margin:0;flex:none;padding:0}
 /* intestazione */
 .top{align-items:center;gap:8px}
 .top .brand{flex:1;text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.6rem,4.5vmin,2.4rem);letter-spacing:.06em;line-height:1;color:#fff6dc;text-shadow:0 2px 6px #0006}
@@ -168,29 +181,29 @@ async function init(){
 
 // ===== Patto (regolamento) da accettare =====
 const PATTO_TITOLO='Il nostro patto';
-const PATTO_TESTO=`1. Non è solo un gioco: è un cammino! Ogni giorno regalati almeno 5 minuti per fermarti sulle parole che trovi. Piano piano, un passo alla volta;
+const PATTO_TESTO=`1. **Non è solo un gioco:** è un cammino! Ogni giorno regalati almeno 5 minuti per fermarti sulle parole che trovi. Piano piano, un passo alla volta;
 
-2. Ogni giorno una Parola. Ti aspettano un estratto del Vangelo del giorno (troverai le indicazioni per leggerlo tutto, altamente consigliato 👀), un commento e una sfida su misura per te;
+2. **Ogni giorno una Parola.** Ti aspettano un estratto del Vangelo del giorno (troverai le indicazioni per leggerlo tutto, altamente consigliato 👀), un commento e una sfida su misura per te;
 
-3. Sveglia alle 6! La sfida si apre ogni mattina alle 6:00. Chi si alza presto vede l'alba, e anche la sfida prima di tutti!
+3. **Sveglia alle 6!** La sfida si apre ogni mattina alle 6:00. Chi si alza presto vede l'alba, e anche la sfida prima di tutti!
 
-4. Scegli il tuo stile. Foto, video, audio o testo: racconta la tua sfida come ti viene meglio;
+4. **Scegli il tuo stile. Foto, video, audio o testo:** racconta la tua sfida come ti viene meglio;
 
-5. Puff, a mezzanotte sparisce tutto! Ogni contenuto caricato svanisce allo scoccare della mezzanotte e non si potrà più vedere. Vivi il momento, domani si riparte!
+5. **Puff, a mezzanotte sparisce tutto!** Ogni contenuto caricato svanisce allo scoccare della mezzanotte e non si potrà più vedere. Vivi il momento, domani si riparte!
 
-6. Prima tu, poi gli altri. Niente sbirciatine: se non carichi la tua sfida, non puoi vedere quelle degli altri;
+6. **Prima tu, poi gli altri. Niente sbirciatine:** se non carichi la tua sfida, non puoi vedere quelle degli altri;
 
-7. Commenta e reagisci! Lascia un commento o una reazione ai post degli altri;
+7. **Commenta e reagisci!** Lascia un commento o una reazione ai post degli altri;
 
-8. Lingua cortese e cuor leale. Niente parolacce: si gioca con rispetto e lealtà;
+8. **Lingua cortese e cuor leale.** Niente parolacce: si gioca con rispetto e lealtà;
 
-9. Insieme! Il gioco è aperto a tutti: ragazzi e genitori!
+9. **Insieme! Il gioco è aperto a tutti:** ragazzi e genitori!
 
 Buona caccia, Buon sentiero e Buona strada`;
 function pattoView(){
   app.innerHTML=scene('');
   const m=document.createElement('div'); m.className='modal';
-  m.innerHTML=`<div class="patto"><div class="hd">🎄 ${esc(PATTO_TITOLO)} 🎄</div><div class="lights"></div><div class="bd">${esc(PATTO_TESTO)}</div>
+  m.innerHTML=`<div class="patto"><div class="hd">🎄 ${esc(PATTO_TITOLO)} 🎄</div><div class="lights"></div><div class="bd">${esc(PATTO_TESTO).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>')}</div>
   <div class="ft"><label class="ck"><input type="checkbox" id="pk"><span>Ho letto il regolamento e mi impegno a rispettarlo</span></label>
   <button id="pa" disabled>Accetto e continuo 🎁</button><button class="sec" id="pn">Non accetto (esci)</button><p id="pm" class="mut"></p></div></div>`;
   document.body.appendChild(m);
@@ -363,6 +376,24 @@ const _BAN=new Map();
 function paroleVietate(t){const n=normTxt(t),out=[];_BAN.forEach((orig,k)=>{if(n.includes(k)&&!out.includes(orig)) out.push(orig);});return out;}
 const msgVietate=(p,az='pubblicare')=>`Non puoi ${az}: il testo contiene ${p.length>1?'queste parole non consentite':'questa parola non consentita'}: ${p.map(w=>'«'+w+'»').join(', ')}. Modificalo e riprova.`;
 
+// ===== Modalità Mentimer (nuvola di parole) =====
+const MENTI_MAX_PAROLE=3; // quante parole al massimo si possono scrivere come risposta nei giorni Mentimer
+const _STOP=new Set('il lo la i gli le un uno una di a da in con su per tra fra e ed o ma che non è sono del della dei delle al alla nel nella'.split(' '));
+const paroleDi=t=>(String(t||'').toLowerCase().match(/[\p{L}\p{N}']+/gu)||[]).map(w=>w.replace(/^'+|'+$/g,'')).filter(Boolean);
+let wcTimer;
+function drawCloud(texts){
+  const box=document.getElementById('wc'); if(!box) return;
+  const cnt=new Map(); let n=0;
+  texts.forEach(t=>{let w=paroleDi(t); if(!w.length) return; n++; if(w.length>1) w=w.filter(x=>!_STOP.has(x)); w.forEach(x=>cnt.set(x,(cnt.get(x)||0)+1));});
+  const max=Math.max(1,...cnt.values()), pal=['#c62f2f','#2f6b3a','#d49a1c','#1f5f8b','#8e1b1b','#4f7a3a','#b3541e'];
+  const hash=w=>[...w].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+  const items=[...cnt].sort((a,b)=>hash(a[0])-hash(b[0])).map(([w,c])=>{
+    const h=hash(w), size=1.15+(max>1?(c-1)/(max-1):.3)*2.5, rot=h%6===0?-5:h%6===1?5:0;
+    return `<span title="${c}×" style="font-size:${size.toFixed(2)}rem;color:${pal[h%pal.length]};transform:rotate(${rot}deg)">${w[0].toUpperCase()+w.slice(1)}</span>`;}).join('');
+  const html=`<h3>☁️ Il Mentimer di oggi</h3><p class="mut">${n} ${n===1?'risposta':'risposte'} · le parole più usate sono più grandi</p><div class="cloud${box.dataset.h?'':' anim'}">${items}</div>`;
+  if(box.dataset.h===html) return; box.dataset.h=html; box.innerHTML=html;
+}
+
 const MAXF=10, MAXC=4, MAXMB=50;
 const kindOf=f=>/^video/.test(f.type)||/\.(mp4|mov|webm|m4v)$/i.test(f.name)?'video':/^audio/.test(f.type)||/\.(mp3|m4a|wav|ogg|oga|aac|opus|amr)$/i.test(f.name)?'audio':'image';
 const ICON={image:'🖼️',video:'🎬',audio:'🎵'};
@@ -398,15 +429,16 @@ async function uploadFiles(files,prefix){
 
 function challengeModal(edit){
   let step=edit?2:0; const m=document.createElement('div'); m.className='modal';
+  const ban=(challenge.anonima?'<div class="note an">🎭 <b>Oggi le risposte sono anonime:</b> nessuno vedrà chi ha scritto cosa.</div>':'')+(challenge.mentimer?`<div class="note mt">☁️ <b>Oggi si gioca a Mentimer!</b> Rispondi con ${MENTI_MAX_PAROLE>1?'da 1 a '+MENTI_MAX_PAROLE+' parole':'una parola'}: le parole di tutti formeranno una nuvola.</div>`:'');
   const files=[], keep=[...(edit?.post_media||[])], removed=[];
   m.innerHTML=`<div class="dbox"><div class="dfront"><small>${(edit?edit.day:today)<'2026-12'?'nov':'dic'}</small><span>${+(edit?edit.day:today).slice(8)}</span><i class="knob"></i></div><div class="dbody"><div class="paper">
   <div class="pg"><h3>📖 Estratto del Vangelo</h3><p class="long">${esc(challenge.gospel||'Il vangelo di oggi arriverà presto.')}</p></div>
   <div class="pg"><h3>💭 Commento</h3><p class="long">${esc(challenge.commentary||'Il commento di oggi arriverà presto.')}</p></div>
-  <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3><p style="text-align:center">${esc(challenge.description)}</p>
-  <textarea id="tx" rows="4" placeholder="Racconta la tua attività...">${esc(edit?.text_content||'')}</textarea>
+  <div class="pg"><h3>🎁 ${esc(challenge.title)}</h3>${ban}<p style="text-align:center">${esc(challenge.description)}</p>
+  <textarea id="tx" rows="${challenge.mentimer?2:4}" placeholder="${challenge.mentimer?'Scrivi la tua parola...':'Racconta la tua attività...'}">${esc(edit?.text_content||'')}</textarea>
   <div id="ex" class="chips"></div>
   <button type="button" class="sec" id="af" style="width:100%">📎 Aggiungi foto, video o audio</button>
-  <div id="nf" class="chips"></div><p class="mut" style="margin:4px 0 0">Puoi allegare più file (max ${MAXF}, ${MAXMB} MB ciascuno).</p></div>
+  <div id="nf" class="chips"></div><p class="mut" id="am" style="margin:4px 0 0">Puoi allegare più file (max ${MAXF}, ${MAXMB} MB ciascuno).</p></div>
   <div class="dots" id="st" style="text-align:center;margin:12px 0 4px"></div>
   <div class="row"><button class="sec" id="cl">Chiudi</button><button class="sec" id="bk">←</button><button id="nx">Avanti →</button><button id="sd">${edit?'Salva':'Pubblica'}</button></div><p id="msg" class="mut"></p>
   </div></div></div>`;
@@ -418,12 +450,14 @@ function challengeModal(edit){
   const drawEx=()=>{const b=$('#ex');b.innerHTML=keep.map((f,i)=>`<span class="chip">${ICON[f.type]} ${esc(shortN(f.name||'allegato'))} <a data-k="${i}">✕</a></span>`).join('');
     b.querySelectorAll('[data-k]').forEach(a=>a.onclick=()=>{removed.push(keep.splice(+a.dataset.k,1)[0]);drawEx();});};
   drawEx();
+  if(challenge.mentimer){['#af','#nf','#am'].forEach(i=>$(i).style.display='none');}
   $('#af').onclick=()=>pickFiles(files,MAXF-keep.length,$('#nf'),$('#msg'));
   $('#cl').onclick=()=>m.remove(); $('#bk').onclick=()=>go(step-1); $('#nx').onclick=()=>go(step+1); go(step);
   $('#sd').onclick=async()=>{
     const text=$('#tx').value.trim(), msg=$('#msg'), btn=$('#sd');
     msg.style.cssText='';
     if(!text&&!files.length&&!keep.length) return msg.textContent='Aggiungi un testo, una foto, un video o un audio.';
+    if(challenge.mentimer){const np=paroleDi(text).length; if(!np) return msg.textContent='Scrivi almeno una parola.'; if(np>MENTI_MAX_PAROLE) return msg.textContent='Puoi scrivere al massimo '+MENTI_MAX_PAROLE+' parole (ne hai scritte '+np+').';}
     const bad=paroleVietate(text); if(bad.length){msg.style.cssText='color:#b3201f;font-weight:700';return msg.textContent=msgVietate(bad);}
     btn.disabled=true; msg.textContent='Salvataggio in corso (i file grandi richiedono un po\')...';
     let up=[]; try{up=await uploadFiles(files,today);}catch(e){btn.disabled=false;return msg.textContent=e.message;}
@@ -449,17 +483,23 @@ async function loadFeed(day,sel='#body'){
   const urls={};
   if(paths.length){const r=await sb.storage.from('media').createSignedUrls(paths,3600);(r.data||[]).forEach(x=>urls[x.path]=x.signedUrl);}
   const pending={};
-  box.innerHTML=(posts.length?'':'<div class="card">Ancora nessun post.</div>')+posts.map(p=>{
+  const fl=(await sb.from('challenges').select('anonima,mentimer').eq('day',day).maybeSingle()).data||{}, anon=!!fl.anonima;
+  box.innerHTML=(fl.mentimer?'<div class="card wc" id="wc"></div>':'')+(posts.length?'':'<div class="card">Ancora nessun post.</div>')+posts.map(p=>{
     const media=(p.post_media||[]).map(m=>mediaHtml(m,urls)).join('');
     const re=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).length,on=p.reactions.some(r=>r.emoji===e&&r.user_id===me.id);
       return `<button class="re ${on?'on':''}" data-p="${p.id}" data-e="${e}" data-on="${on}">${e} ${n||''}</button>`}).join(' ');
     const who=EMOJI.map(e=>{const n=p.reactions.filter(r=>r.emoji===e).map(r=>r.profiles?.nickname).filter(Boolean);return n.length?`<div class="mut">${e} ${esc(n.join(', '))}</div>`:''}).join('');
     const cm=p.comments.map(c=>`<div style="margin:8px 0"><b>${esc(c.profiles?.nickname)}</b>${c.text_content?': '+esc(c.text_content):''}${(c.comment_media||[]).map(m=>mediaHtml(m,urls)).join('')}</div>`).join('');
     const ed=p.user_id===me.id&&p.day===today?`<button class="sec" style="width:auto;float:right;margin:0" data-edit="${p.id}">✏️ Modifica</button>`:'';
-    return `<div class="card"><b>${esc(p.profiles.nickname)}</b> <span class="mut">${esc(p.profiles.branca)}</span>${ed}
+    return `<div class="card"><b>${anon?(p.user_id===me.id?'🎭 Anonimo (tu)':'🎭 Anonimo'):esc(p.profiles.nickname)}</b> ${anon?'':`<span class="mut">${esc(p.profiles.branca)}</span>`}${ed}
       <p>${esc(p.text_content)}</p>${media}<div style="margin-top:8px">${re}</div>${who}${cm}
       <div id="cf${p.id}" class="chips"></div>
       <div class="row"><input placeholder="Commenta..." maxlength="500" id="c${p.id}"><button class="sec" data-a="${p.id}" title="Allega foto, video o audio" style="flex:none;width:auto">📎</button><button data-c="${p.id}" style="flex:none;width:auto">Invia</button></div></div>`}).join('');
+  clearInterval(wcTimer);
+  if(fl.mentimer){
+    drawCloud(posts.map(p=>p.text_content));
+    wcTimer=setInterval(async()=>{ if(!document.getElementById('wc')){clearInterval(wcTimer);return;} const r=await sb.from('posts').select('text_content').eq('day',day); if(r.data) drawCloud(r.data.map(x=>x.text_content)); },15000);
+  }
   box.querySelectorAll('.re').forEach(b=>b.onclick=async()=>{
     const rq=sb.from('reactions'); b.dataset.on==='true'
       ? await rq.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
@@ -584,9 +624,29 @@ async function accountView(){
 async function adminView(){
   const {data:users}=await sb.from('profiles').select('id,nickname,branca').order('nickname');
   const u=users||[];
-  $('#body').innerHTML=`<div class="row tabs"><button class="tab" id="t1">📎 File riservati</button><button class="tab" id="t2">📁 Recap</button><button class="tab" id="t3">👥 Account</button><button class="tab" id="t4">🛡️ Moderazione</button></div><div id="admbox"></div>`;
-  const tab=(n,f)=>{[1,2,3,4].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
-  $('#t1').onclick=()=>tab(1,()=>riservati(u)); $('#t2').onclick=()=>tab(2,recapView); $('#t3').onclick=()=>tab(3,accountView); $('#t4').onclick=()=>tab(4,()=>moderaView(u)); tab(1,()=>riservati(u));
+  $('#body').innerHTML=`<div class="row tabs"><button class="tab" id="t1">📎 File riservati</button><button class="tab" id="t2">📁 Recap</button><button class="tab" id="t3">👥 Account</button><button class="tab" id="t4">🛡️ Moderazione</button><button class="tab" id="t5">🎛️ Giornata</button></div><div id="admbox"></div>`;
+  const tab=(n,f)=>{[1,2,3,4,5].forEach(i=>$('#t'+i).classList.toggle('on',i===n));f();};
+  $('#t1').onclick=()=>tab(1,()=>riservati(u)); $('#t2').onclick=()=>tab(2,recapView); $('#t3').onclick=()=>tab(3,accountView); $('#t4').onclick=()=>tab(4,()=>moderaView(u)); $('#t5').onclick=()=>tab(5,giornataView); tab(1,()=>riservati(u));
+}
+async function giornataView(){
+  $('#admbox').innerHTML=`<div class="card"><b>🎛️ Impostazioni della giornata</b>
+  <p class="mut">Scegli il giorno e attiva le modalità speciali: valgono solo per la sfida di quel giorno.</p>
+  <label class="mut">Giorno</label><input type="date" id="gd" value="${today}"><div id="gb"></div></div>`;
+  const load=async()=>{
+    const day=$('#gd').value, box=$('#gb'); if(!day) return;
+    const {data,error}=await sb.from('challenges').select('day,title,anonima,mentimer').eq('day',day).maybeSingle();
+    if(error) return box.innerHTML=`<p>${esc(error.message)}<br><span class="mut">Hai eseguito aggiornamento8.sql su Supabase?</span></p>`;
+    if(!data) return box.innerHTML='<p class="mut">Per questo giorno non c\'è ancora una sfida.</p>';
+    box.innerHTML=`<p><b>🎁 ${esc(data.title)}</b></p>
+    <label class="ck2"><input type="checkbox" id="ga" ${data.anonima?'checked':''}><span>🎭 Risposte anonime (gli utenti vedono un avviso quando si apre la sfida)</span></label>
+    <label class="ck2"><input type="checkbox" id="gm" ${data.mentimer?'checked':''}><span>☁️ Modalità Mentimer (le parole diventano una nuvola)</span></label>
+    <button id="gs">Salva</button><p id="gmsg" class="mut"></p>`;
+    $('#gs').onclick=async()=>{
+      const r=await sb.from('challenges').update({anonima:$('#ga').checked,mentimer:$('#gm').checked}).eq('day',day).select('day');
+      $('#gmsg').textContent=(r.error||!r.data?.length)?'Salvataggio non riuscito: controlla di aver eseguito aggiornamento8.sql.':'Salvato ✅';
+    };
+  };
+  $('#gd').onchange=load; load();
 }
 async function moderaView(users){
   $('#admbox').innerHTML=`<div class="card"><b>🛡️ Moderazione post e commenti</b>
