@@ -21,6 +21,7 @@ button{background:#fff;color:#2b2b2b;font-weight:600;border:1px solid #bfb3a0;bo
 .row{display:flex;gap:8px}.row>*{width:auto;flex:1}
 .mut{color:var(--mut);font-size:.85rem}
 img,video{max-width:100%;border-radius:10px;margin-top:8px}
+.card img,.card video{max-height:75vh;object-fit:contain}
 .modal{position:fixed;inset:0;background:#000a;display:flex;align-items:center;justify-content:center;padding:16px;z-index:9}
 .modal .card{max-width:480px;width:100%;max-height:90vh;overflow:auto}
 .re{width:auto;padding:4px 10px;background:#8883;color:var(--ink)}.re.on{background:#fff;color:#2b2b2b;border:2px solid #7a1313;font-weight:700}
@@ -183,7 +184,11 @@ let me, session, challenge, myPost, viewDay=today, adminOpen=false;
 async function init(){
   ({data:{session}}=await sb.auth.getSession());
   if(!session) return loginView();
-  const {data}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  const {data,error}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  if(error){ // niente rete / servizio non raggiungibile: non mostro il profilo "da completare" per sbaglio
+    app.innerHTML=scene(`<div class="card"><b>Ops, non riesco a collegarmi.</b><p class="mut">Controlla la connessione e riprova.</p><button id="rt">Riprova</button><button class="sec" id="lo">Esci</button></div>`);
+    $('#rt').onclick=init; $('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload()); return;
+  }
   me=data; if(!me) return onboardView(); if(!me.patto_accettato_il) return pattoView(); mainView();
 }
 
@@ -218,20 +223,33 @@ async function controllaAvvisi(){
 const permNotif=()=>('Notification' in window)?Notification.permission:'unsupported';
 const pushOk=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
 const b64u=t=>Uint8Array.from(atob((t+'='.repeat((4-t.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
-async function registraPush(chiedi){
-  const reg=await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
-  if(Notification.permission!=='granted'){ if(!chiedi) return false; if(await Notification.requestPermission()!=='granted') return false; }
-  let sub=await reg.pushManager.getSubscription();
-  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+// Va chiamata DENTRO un click: chiede subito il permesso (Android lo richiede in risposta a un tocco), poi registra il telefono.
+async function abilitaPush(){
+  if(!pushOk()) return {ok:false,msg:'Questo browser non supporta le notifiche push.'};
+  let perm=Notification.permission;
+  if(perm==='default') perm=await Notification.requestPermission();
+  if(perm==='denied') return {ok:false,blocked:true,msg:'Le notifiche sono bloccate per questo sito: riattivale dalle impostazioni del browser o del telefono.'};
+  if(perm!=='granted') return {ok:false,msg:'Non hai concesso il permesso per le notifiche.'};
+  let reg;
+  try{ reg=await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready; }
+  catch(e){ return {ok:false,msg:'Il file sw.js non è raggiungibile: caricalo su GitHub nella stessa cartella di index.html. ('+e.message+')'}; }
+  let sub;
+  try{ sub=await reg.pushManager.getSubscription()||await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)}); }
+  catch(e){ return {ok:false,msg:'Il telefono ha rifiutato l\'iscrizione alle notifiche: '+e.message}; }
   const j=sub.toJSON(); const {error}=await sb.rpc('registra_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
-  return !error;
+  if(error) return {ok:false,msg:'Salvataggio non riuscito (hai eseguito aggiornamento9.sql su Supabase?): '+error.message};
+  return {ok:true};
 }
+const msgNoPush=()=>/Android/i.test(navigator.userAgent)
+  ?'Questo browser non permette le notifiche. Apri Maranathapp con Chrome (non dal browser interno di WhatsApp o di altre app) e riprova.'
+  :/iPhone|iPad|iPod/i.test(navigator.userAgent)
+  ?'Su iPhone le notifiche funzionano solo dopo aver aggiunto l\'app alla schermata Home: tocca Condividi → "Aggiungi alla schermata Home", apri Maranathapp da quell\'icona e premi di nuovo 🔔.'
+  :'Questo browser non supporta le notifiche. Prova con Chrome.';
 async function attivaNotifiche(){
-  if(!pushOk()) return alert('Per ricevere le notifiche su iPhone: tocca Condividi → "Aggiungi alla schermata Home", apri Maranathapp da quell\'icona e premi di nuovo 🔔. Su Android usa Chrome.');
-  let ok=false; try{ ok=await registraPush(true); }catch(e){}
-  if(ok){ const b=$('#bell'); if(b) b.remove(); alert('Notifiche attivate 🎄'); }
-  else if(permNotif()==='denied') alert('Le notifiche sono bloccate: riattivale dalle impostazioni del browser o del telefono per questo sito.');
-  else alert('Non sono riuscito ad attivare le notifiche. Riprova più tardi.');
+  if(!pushOk()) return alert(msgNoPush());
+  let r; try{ r=await abilitaPush(); }catch(e){ r={ok:false,msg:String(e&&e.message||e)}; }
+  if(r.ok){ const b=$('#bell'); if(b) b.remove(); alert('Notifiche attivate 🎄'); }
+  else alert(r.msg);
 }
 // Primo accesso (subito dopo il patto): si chiede UNA volta di attivare le notifiche
 function notificheView(){
@@ -242,7 +260,7 @@ function notificheView(){
     document.body.appendChild(m);
     const fine=()=>{m.remove();res();};
     $('#nno').onclick=fine;
-    if(ok) $('#nsi').onclick=async()=>{ $('#nsi').disabled=true; try{ await registraPush(true); }catch(e){} fine(); };
+    if(ok) $('#nsi').onclick=async()=>{ $('#nsi').disabled=true; let r; try{ r=await abilitaPush(); }catch(e){ r={ok:false,msg:String(e&&e.message||e)}; } if(!r.ok&&r.msg) alert(r.msg); fine(); };
   });
 }
 // ===== Patto (regolamento) da accettare =====
@@ -302,22 +320,28 @@ function loginView(){
   $('#tg').onclick=()=>{reg=!reg;$('#br').style.display=reg?'':'none';$('#go').textContent=reg?'Registrati':'Entra';
     $('#tg').textContent=reg?'Ho già un account':'Prima volta? Registrati';$('#msg').textContent='';};
   $('#go').onclick=async()=>{
-    const nick=$('#nick').value.trim(), pw=$('#pw').value, br=$('#br').value, msg=$('#msg');
-    if(!/^[a-z0-9_.-]{3,20}$/i.test(nick)) return msg.textContent='Nickname: 3-20 caratteri, solo lettere, numeri, _ . -';
-    if(pw.length<6) return msg.textContent='La password deve avere almeno 6 caratteri.';
-    if(reg){
-      if(!br) return msg.textContent='Scegli la branca.';
-      if(br==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
-      const {data,error}=await sb.auth.signUp({email:mail(nick),password:pw});
-      if(error) return msg.textContent=/registered|exists/i.test(error.message)?'Nickname già usato, scegline un altro.':error.message;
-      if(!data.session) return msg.textContent='Registrazione non completata: su Supabase disattiva "Confirm email".';
-      const r=await sb.from('profiles').insert({id:data.user.id,nickname:nick,branca:br});
-      if(r.error) return msg.textContent=r.error.message.includes('capi_limit')?NOCAPO:r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message;
-    } else {
-      const {error}=await sb.auth.signInWithPassword({email:mail(nick),password:pw});
-      if(error) return msg.textContent='Nickname o password errati.';
-    }
-    init();
+    const nick=$('#nick').value.trim(), pw=$('#pw').value, br=$('#br').value, msg=$('#msg'), go=$('#go');
+    const OOPS='Ops, hai sbagliato qualcosa! Controlla nickname e password.';
+    if(!/^[a-z0-9_.-]{3,20}$/i.test(nick)) return msg.textContent=reg?'Nickname: 3-20 caratteri, solo lettere, numeri, _ . -':OOPS;
+    if(pw.length<6) return msg.textContent=reg?'La password deve avere almeno 6 caratteri.':OOPS;
+    go.disabled=true; msg.textContent='';
+    try{
+      if(reg){
+        if(!br) return msg.textContent='Scegli la branca.';
+        const bn=paroleVietate(nick); if(bn.length) return msg.textContent='Nickname non consentito: contiene '+bn.map(w=>'«'+w+'»').join(', ')+'. Scegline un altro.';
+        if(br==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
+        const {data,error}=await sb.auth.signUp({email:mail(nick),password:pw});
+        if(error) return msg.textContent=/registered|exists/i.test(error.message)?'Nickname già usato, scegline un altro.':error.message;
+        if(!data.session) return msg.textContent='Registrazione non completata: su Supabase disattiva "Confirm email".';
+        const r=await sb.from('profiles').insert({id:data.user.id,nickname:nick,branca:br});
+        if(r.error) return msg.textContent=r.error.message.includes('capi_limit')?NOCAPO:r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message;
+      } else {
+        const {error}=await sb.auth.signInWithPassword({email:mail(nick),password:pw});
+        if(error) return msg.textContent=error.status===429?'Troppi tentativi: aspetta un minuto e riprova.':(error.status&&error.status>=500)?'Il servizio non risponde, riprova tra poco.':OOPS;
+      }
+      init();
+    }catch(e){ msg.textContent='Ops, qualcosa non ha funzionato. Controlla la connessione e riprova.'; }
+    finally{ go.disabled=false; }
   };
 }
 
@@ -328,6 +352,7 @@ function onboardView(){
   $('#ok').onclick=async()=>{
     const nickname=$('#nick').value.trim(), branca=$('#br').value, msg=$('#msg');
     if(!nickname||!branca) return msg.textContent='Compila tutti i campi.';
+    const bn=paroleVietate(nickname); if(bn.length) return msg.textContent='Nickname non consentito: contiene '+bn.map(w=>'«'+w+'»').join(', ')+'. Scegline un altro.';
     if(branca==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
     const {error}=await sb.from('profiles').insert({id:session.user.id,nickname,branca});
     if(error) return msg.textContent=error.message.includes('capi_limit')?NOCAPO:error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
@@ -338,7 +363,7 @@ function onboardView(){
 async function mainView(){
   adminOpen=false;
   controllaAvvisi(); if(!window._avvT) window._avvT=setInterval(controllaAvvisi,30000);
-  if(pushOk()&&Notification.permission==='granted') registraPush(false).catch(()=>{});
+  if(pushOk()&&Notification.permission==='granted') abilitaPush().catch(()=>{}); // tiene aggiornata l'iscrizione di questo telefono
   document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer);
   const inRange=today>=START&&today<=END;
   app.innerHTML=`<div class="row top"><b class="brand">Maranathapp</b>
@@ -468,7 +493,7 @@ const kindOf=f=>/^video/.test(f.type)||/\.(mp4|mov|webm|m4v)$/i.test(f.name)?'vi
 const ICON={image:'🖼️',video:'🎬',audio:'🎵'};
 const extOf=n=>((n.split('.').pop()||'bin').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,5))||'bin';
 const shortN=n=>n.length>22?n.slice(0,19)+'…':n;
-const mediaHtml=(m,urls)=>{const u=urls[m.path];if(!u)return '';return m.type==='video'?`<video src="${u}" controls playsinline></video>`:m.type==='audio'?`<audio src="${u}" controls></audio>`:`<img src="${u}" loading="lazy">`;};
+const mediaHtml=(m,urls)=>{const u=urls[m.path];if(!u)return `<p class="mut">${ICON[m.type]||'📎'} Allegato non disponibile</p>`;return m.type==='video'?`<video src="${u}" controls playsinline preload="metadata"></video>`:m.type==='audio'?`<audio src="${u}" controls preload="none"></audio>`:`<img src="${u}" loading="lazy" alt="">`;};
 function chips(box,files){
   box.innerHTML=files.map((f,i)=>`<span class="chip">${ICON[kindOf(f)]} ${esc(shortN(f.name))} <a data-x="${i}">✕</a></span>`).join('');
   box.querySelectorAll('[data-x]').forEach(a=>a.onclick=()=>{files.splice(+a.dataset.x,1);chips(box,files);});
@@ -522,6 +547,7 @@ function challengeModal(edit){
   if(challenge.mentimer){['#af','#nf','#am'].forEach(i=>$(i).style.display='none');}
   $('#af').onclick=()=>pickFiles(files,MAXF-keep.length,$('#nf'),$('#msg'));
   $('#cl').onclick=()=>m.remove(); $('#bk').onclick=()=>go(step-1); $('#nx').onclick=()=>go(step+1); go(step);
+  let pid=edit?.id; // se il salvataggio degli allegati fallisce, al nuovo tentativo si aggiorna lo stesso post
   $('#sd').onclick=async()=>{
     const text=$('#tx').value.trim(), msg=$('#msg'), btn=$('#sd');
     msg.style.cssText='';
@@ -531,10 +557,10 @@ function challengeModal(edit){
     btn.disabled=true; msg.textContent='Salvataggio in corso (i file grandi richiedono un po\')...';
     let up=[]; try{up=await uploadFiles(files,today);}catch(e){btn.disabled=false;return msg.textContent=e.message;}
     const undo=async()=>{if(up.length) await sb.storage.from('media').remove(up.map(x=>x.path)); btn.disabled=false;};
-    let pid=edit?.id;
-    if(edit){ const {error}=await sb.from('posts').update({text_content:text||null}).eq('id',pid); if(error){await undo();return msg.textContent=error.message;} }
-    else { const {data,error}=await sb.from('posts').insert({user_id:me.id,day:today,text_content:text||null}).select('id').single(); if(error){await undo();return msg.textContent=error.message;} pid=data.id; }
-    if(up.length){ const r=await sb.from('post_media').insert(up.map(x=>({post_id:pid,...x}))); if(r.error){btn.disabled=false;return msg.textContent=r.error.message;} }
+    const errMsg=e=>dayNow()!==today?'È scattata la mezzanotte: questa sfida non si può più pubblicare. Chiudi e ricarica la pagina.':e.message;
+    if(pid){ const {error}=await sb.from('posts').update({text_content:text||null}).eq('id',pid); if(error){await undo();return msg.textContent=errMsg(error);} }
+    else { const {data,error}=await sb.from('posts').insert({user_id:me.id,day:today,text_content:text||null}).select('id').single(); if(error){await undo();return msg.textContent=errMsg(error);} pid=data.id; }
+    if(up.length){ const r=await sb.from('post_media').insert(up.map(x=>({post_id:pid,...x}))); if(r.error){ await sb.storage.from('media').remove(up.map(x=>x.path)); btn.disabled=false; return msg.textContent='Non sono riuscito a salvare gli allegati: '+r.error.message; } }
     if(removed.length){ await sb.from('post_media').delete().in('id',removed.map(x=>x.id)); await sb.storage.from('media').remove(removed.map(x=>x.path)); }
     m.remove(); mainView();
   };
@@ -570,9 +596,11 @@ async function loadFeed(day,sel='#body'){
     wcTimer=setInterval(async()=>{ if(!document.getElementById('wc')){clearInterval(wcTimer);return;} const r=await sb.from('posts').select('text_content').eq('day',day); if(r.data) drawCloud(r.data.map(x=>x.text_content)); },15000);
   }
   box.querySelectorAll('.re').forEach(b=>b.onclick=async()=>{
-    const rq=sb.from('reactions'); b.dataset.on==='true'
+    const rq=sb.from('reactions');
+    const r=b.dataset.on==='true'
       ? await rq.delete().match({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e})
       : await rq.insert({post_id:b.dataset.p,user_id:me.id,emoji:b.dataset.e});
+    if(r.error) alert('Reazione non salvata: '+r.error.message);
     loadFeed(day,sel)});
   box.querySelectorAll('[data-edit]').forEach(b=>b.onclick=()=>challengeModal(posts.find(x=>x.id===b.dataset.edit)));
   box.querySelectorAll('[data-a]').forEach(b=>b.onclick=()=>{const id=b.dataset.a;pickFiles(pending[id]||(pending[id]=[]),MAXC,$('#cf'+id),null);});
@@ -584,7 +612,7 @@ async function loadFeed(day,sel='#body'){
     try{up=await uploadFiles(fs,'c'+today);}catch(e){b.disabled=false;return alert(e.message);}
     const {data:c,error}=await sb.from('comments').insert({post_id:id,user_id:me.id,text_content:t}).select('id').single();
     if(error){if(up.length) await sb.storage.from('media').remove(up.map(x=>x.path)); b.disabled=false; return alert(error.message);}
-    if(up.length) await sb.from('comment_media').insert(up.map(x=>({comment_id:c.id,...x})));
+    if(up.length){ const r=await sb.from('comment_media').insert(up.map(x=>({comment_id:c.id,...x}))); if(r.error){ await sb.storage.from('media').remove(up.map(x=>x.path)); alert('Commento inviato, ma gli allegati non sono stati salvati: '+r.error.message); } }
     loadFeed(day,sel);
   });
 }
