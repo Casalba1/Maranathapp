@@ -85,6 +85,14 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 @keyframes pop{from{transform:scale(.3);opacity:0}}
 .ck2{display:flex;align-items:center;gap:10px;margin:10px 0;font-weight:600}
 .ck2 input{width:22px;height:22px;margin:0;flex:none;padding:0}
+
+/* messaggi degli admin */
+.avv{width:100%;max-width:440px;max-height:90vh;display:flex;flex-direction:column;background:#fbf1dc;color:#2b2b2b;border-radius:18px;border:3px solid #c62f2f;box-shadow:0 0 0 3px #e0b04a,0 14px 40px #000b;overflow:hidden}
+.avv .hd{background:linear-gradient(#d83a35,#a82020);color:#fff6dc;text-align:center;padding:12px;font-family:'Cormorant Garamond',Georgia,serif;font-size:1.45rem;font-weight:600;letter-spacing:.04em}
+.avv .bd{padding:14px 16px;overflow:auto;flex:1;line-height:1.45}
+.avv .it{background:#fff;border:1px solid #e3d3b0;border-radius:10px;padding:10px 12px;margin:0 0 10px}
+.avv .q{color:#6b6254;font-style:italic;font-size:.9rem;margin-top:4px}
+.avv .ft{padding:6px 16px 14px;border-top:2px dashed #c62f2f55;background:#f6ead6}
 /* intestazione */
 .top{align-items:center;gap:8px}
 .top .brand{flex:1;text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.6rem,4.5vmin,2.4rem);letter-spacing:.06em;line-height:1;color:#fff6dc;text-shadow:0 2px 6px #0006}
@@ -179,6 +187,64 @@ async function init(){
   me=data; if(!me) return onboardView(); if(!me.patto_accettato_il) return pattoView(); mainView();
 }
 
+// ===== Messaggi degli admin e notifiche sul telefono =====
+const VAPID_PUBLIC='BGiVkj8o-HBSQF1LkSTpZ_O2WNBATbH_ghzxAsiYwByW81TTMWpwF57fkF3yfHF66eGyJfeGX73dYshDNuMneAI'; // chiave pubblica per le notifiche (la chiave privata sta solo in Supabase)
+function chiediMotivo(tipo,nick){ // restituisce il motivo ('' se vuoto) oppure null se l'admin annulla
+  return new Promise(res=>{
+    const m=document.createElement('div'); m.className='modal';
+    m.innerHTML=`<div class="avv"><div class="hd">🗑️ Elimina ${tipo}</div><div class="bd"><p style="margin-top:0">Stai per eliminare questo ${tipo} di <b>${esc(nick)}</b>. Lui verrà avvisato. Se vuoi, scrivi anche il motivo: lo vedrà (e riceverà come notifica) <b>solo lui</b>.</p><textarea id="mv" rows="4" maxlength="500" placeholder="Motivo (facoltativo). Es. Il testo conteneva parole non rispettose del patto."></textarea></div><div class="ft"><button id="mok">Elimina</button><button class="sec" id="mno">Annulla</button></div></div>`;
+    document.body.appendChild(m);
+    $('#mno').onclick=()=>{m.remove();res(null);};
+    $('#mok').onclick=()=>{const t=$('#mv').value.trim(); m.remove(); res(t);};
+  });
+}
+async function inviaAvviso(userId,tipo,giorno,estratto,motivo){
+  const {data,error}=await sb.from('avvisi_admin').insert({user_id:userId,tipo,giorno,estratto:(estratto||'').slice(0,160),motivo:motivo||null}).select('id').single();
+  if(error) return false;
+  sb.functions.invoke('invia-notifica',{body:{notice_id:data.id}}).catch(()=>{}); // notifica sul telefono (se attiva)
+  return true;
+}
+async function controllaAvvisi(){
+  if(!me||document.querySelector('.modal')) return;
+  const {data}=await sb.from('avvisi_admin').select('*').eq('user_id',me.id).eq('letto',false).order('created_at');
+  if(!data||!data.length||document.querySelector('.modal')) return;
+  const dd=g=>g?' del '+g.split('-').reverse().slice(0,2).join('/'):'';
+  const items=data.map(a=>`<div class="it">Il tuo <b>${esc(a.tipo)}</b>${dd(a.giorno)} è stato eliminato da un admin.${a.estratto?`<div class="q">«${esc(a.estratto)}»</div>`:''}${a.motivo?`<p style="margin:6px 0 0"><b>Motivo:</b> ${esc(a.motivo)}</p>`:''}</div>`).join('');
+  const m=document.createElement('div'); m.className='modal';
+  m.innerHTML=`<div class="avv"><div class="hd">📬 Messaggio dagli admin</div><div class="bd">${items}<p class="mut" style="margin:0">Ricordiamoci insieme del patto di Maranathapp 🎄</p></div><div class="ft"><button id="avo">Ho capito</button></div></div>`;
+  document.body.appendChild(m);
+  $('#avo').onclick=async()=>{await sb.rpc('segna_avvisi_letti'); m.remove();};
+}
+const permNotif=()=>('Notification' in window)?Notification.permission:'unsupported';
+const pushOk=()=>('serviceWorker' in navigator)&&('PushManager' in window)&&('Notification' in window);
+const b64u=t=>Uint8Array.from(atob((t+'='.repeat((4-t.length%4)%4)).replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+async function registraPush(chiedi){
+  const reg=await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready;
+  if(Notification.permission!=='granted'){ if(!chiedi) return false; if(await Notification.requestPermission()!=='granted') return false; }
+  let sub=await reg.pushManager.getSubscription();
+  if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
+  const j=sub.toJSON(); const {error}=await sb.rpc('registra_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
+  return !error;
+}
+async function attivaNotifiche(){
+  if(!pushOk()) return alert('Per ricevere le notifiche su iPhone: tocca Condividi → "Aggiungi alla schermata Home", apri Maranathapp da quell\'icona e premi di nuovo 🔔. Su Android usa Chrome.');
+  let ok=false; try{ ok=await registraPush(true); }catch(e){}
+  if(ok){ const b=$('#bell'); if(b) b.remove(); alert('Notifiche attivate 🎄'); }
+  else if(permNotif()==='denied') alert('Le notifiche sono bloccate: riattivale dalle impostazioni del browser o del telefono per questo sito.');
+  else alert('Non sono riuscito ad attivare le notifiche. Riprova più tardi.');
+}
+// Primo accesso (subito dopo il patto): si chiede UNA volta di attivare le notifiche
+function notificheView(){
+  return new Promise(res=>{
+    const ok=pushOk();
+    const m=document.createElement('div'); m.className='modal';
+    m.innerHTML=`<div class="avv"><div class="hd">🔔 Vuoi le notifiche?</div><div class="bd"><p style="margin-top:0">Ti avviseremo <b>ogni mattina alle 6:00</b>, quando si apre la sfida del giorno, e se un admin ti scrive un messaggio.</p>${ok?'':'<p class="mut">Su iPhone le notifiche funzionano solo dopo aver aggiunto Maranathapp alla schermata Home (Condividi → "Aggiungi alla schermata Home") e aperto l\'app da quell\'icona: potrai attivarle da lì con il pulsante 🔔.</p>'}</div><div class="ft">${ok?'<button id="nsi">Attiva le notifiche 🎁</button><button class="sec" id="nno">Non ora</button>':'<button id="nno">Ho capito</button>'}</div></div>`;
+    document.body.appendChild(m);
+    const fine=()=>{m.remove();res();};
+    $('#nno').onclick=fine;
+    if(ok) $('#nsi').onclick=async()=>{ $('#nsi').disabled=true; try{ await registraPush(true); }catch(e){} fine(); };
+  });
+}
 // ===== Patto (regolamento) da accettare =====
 const PATTO_TITOLO='Il nostro patto';
 const PATTO_TESTO=`1. **Non è solo un gioco:** è un cammino! Ogni giorno regalati almeno 5 minuti per fermarti sulle parole che trovi. Piano piano, un passo alla volta;
@@ -213,7 +279,7 @@ function pattoView(){
     const b=$('#pa'); b.disabled=true;
     const {error}=await sb.rpc('accetta_patto');
     if(error){b.disabled=false;return $('#pm').textContent='Errore: '+error.message;}
-    m.remove(); me.patto_accettato_il=new Date().toISOString(); mainView();
+    m.remove(); me.patto_accettato_il=new Date().toISOString(); await notificheView(); mainView();
   };
 }
 const mail=n=>n.trim().toLowerCase()+'@diario-avvento.app'; // NON cambiare: è il dominio interno con cui sono stati creati gli account esistenti
@@ -271,10 +337,13 @@ function onboardView(){
 
 async function mainView(){
   adminOpen=false;
+  controllaAvvisi(); if(!window._avvT) window._avvT=setInterval(controllaAvvisi,30000);
+  if(pushOk()&&Notification.permission==='granted') registraPush(false).catch(()=>{});
   document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer);
   const inRange=today>=START&&today<=END;
   app.innerHTML=`<div class="row top"><b class="brand">Maranathapp</b>
-  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
+  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}${pushOk()&&permNotif()==='default'?'<button class="sec" id="bell" title="Attiva le notifiche">🔔</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
+  if($('#bell')) $('#bell').onclick=attivaNotifiche;
   $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
   loadMyFiles(); countdown();
   if(me.is_admin) $('#adm').onclick=()=>{if(adminOpen) return mainView(); adminOpen=true; $('#adm').textContent='← Post'; document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer); adminView();};
@@ -366,7 +435,7 @@ const PAROLE_VIETATE=[
 ];
 // Parole che in alcuni contesti sono innocue (Vangelo, preghiere, descrizioni). Mettendo false NON vengono più bloccate.
 const BLOCCA_DUBBIE=true;
-const PAROLE_DUBBIE=["dio fa","trans","prostituta","down","storpio","storpi","obeso","anoressica","nano","nana","muori","cancro","tumore","aids"];
+const PAROLE_DUBBIE=["dio fa","storpio","storpi","nano","nana","muori","cancro","tumore","aids"];
 const _LEET={'@':'a','4':'a','0':'o','1':'i','3':'e','5':'s','$':'s'};
 const normTxt=t=>' '+String(t||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'')
   .split(/\s+/).map(w=>/[a-z]/.test(w)?w.replace(/[@40135$]/g,c=>_LEET[c]):w).join(' ')
@@ -376,8 +445,8 @@ const _BAN=new Map();
 function paroleVietate(t){const n=normTxt(t),out=[];_BAN.forEach((orig,k)=>{if(n.includes(k)&&!out.includes(orig)) out.push(orig);});return out;}
 const msgVietate=(p,az='pubblicare')=>`Non puoi ${az}: il testo contiene ${p.length>1?'queste parole non consentite':'questa parola non consentita'}: ${p.map(w=>'«'+w+'»').join(', ')}. Modificalo e riprova.`;
 
-// ===== Modalità Mentimer (nuvola di parole) =====
-const MENTI_MAX_PAROLE=3; // quante parole al massimo si possono scrivere come risposta nei giorni Mentimer
+// ===== Modalità Word cloud (nuvola di parole) =====
+const WORDCLOUD_MAX_PAROLE=3; // quante parole al massimo si possono scrivere come risposta nei giorni Word cloud
 const _STOP=new Set('il lo la i gli le un uno una di a da in con su per tra fra e ed o ma che non è sono del della dei delle al alla nel nella'.split(' '));
 const paroleDi=t=>(String(t||'').toLowerCase().match(/[\p{L}\p{N}']+/gu)||[]).map(w=>w.replace(/^'+|'+$/g,'')).filter(Boolean);
 let wcTimer;
@@ -390,7 +459,7 @@ function drawCloud(texts){
   const items=[...cnt].sort((a,b)=>hash(a[0])-hash(b[0])).map(([w,c])=>{
     const h=hash(w), size=1.15+(max>1?(c-1)/(max-1):.3)*2.5, rot=h%6===0?-5:h%6===1?5:0;
     return `<span title="${c}×" style="font-size:${size.toFixed(2)}rem;color:${pal[h%pal.length]};transform:rotate(${rot}deg)">${w[0].toUpperCase()+w.slice(1)}</span>`;}).join('');
-  const html=`<h3>☁️ Il Mentimer di oggi</h3><p class="mut">${n} ${n===1?'risposta':'risposte'} · le parole più usate sono più grandi</p><div class="cloud${box.dataset.h?'':' anim'}">${items}</div>`;
+  const html=`<h3>☁️ La Word cloud di oggi</h3><p class="mut">${n} ${n===1?'risposta':'risposte'} · le parole più usate sono più grandi</p><div class="cloud${box.dataset.h?'':' anim'}">${items}</div>`;
   if(box.dataset.h===html) return; box.dataset.h=html; box.innerHTML=html;
 }
 
@@ -429,7 +498,7 @@ async function uploadFiles(files,prefix){
 
 function challengeModal(edit){
   let step=edit?2:0; const m=document.createElement('div'); m.className='modal';
-  const ban=(challenge.anonima?'<div class="note an">🎭 <b>Oggi le risposte sono anonime:</b> nessuno vedrà chi ha scritto cosa.</div>':'')+(challenge.mentimer?`<div class="note mt">☁️ <b>Oggi si gioca a Mentimer!</b> Rispondi con ${MENTI_MAX_PAROLE>1?'da 1 a '+MENTI_MAX_PAROLE+' parole':'una parola'}: le parole di tutti formeranno una nuvola.</div>`:'');
+  const ban=(challenge.anonima?'<div class="note an">🎭 <b>Oggi le risposte sono anonime:</b> nessuno vedrà chi ha scritto cosa.</div>':'')+(challenge.mentimer?`<div class="note mt">☁️ <b>Oggi si gioca a Word cloud!</b> Rispondi con ${WORDCLOUD_MAX_PAROLE>1?'da 1 a '+WORDCLOUD_MAX_PAROLE+' parole':'una parola'}: le parole di tutti formeranno una nuvola.</div>`:'');
   const files=[], keep=[...(edit?.post_media||[])], removed=[];
   m.innerHTML=`<div class="dbox"><div class="dfront"><small>${(edit?edit.day:today)<'2026-12'?'nov':'dic'}</small><span>${+(edit?edit.day:today).slice(8)}</span><i class="knob"></i></div><div class="dbody"><div class="paper">
   <div class="pg"><h3>📖 Estratto del Vangelo</h3><p class="long">${esc(challenge.gospel||'Il vangelo di oggi arriverà presto.')}</p></div>
@@ -457,7 +526,7 @@ function challengeModal(edit){
     const text=$('#tx').value.trim(), msg=$('#msg'), btn=$('#sd');
     msg.style.cssText='';
     if(!text&&!files.length&&!keep.length) return msg.textContent='Aggiungi un testo, una foto, un video o un audio.';
-    if(challenge.mentimer){const np=paroleDi(text).length; if(!np) return msg.textContent='Scrivi almeno una parola.'; if(np>MENTI_MAX_PAROLE) return msg.textContent='Puoi scrivere al massimo '+MENTI_MAX_PAROLE+' parole (ne hai scritte '+np+').';}
+    if(challenge.mentimer){const np=paroleDi(text).length; if(!np) return msg.textContent='Scrivi almeno una parola.'; if(np>WORDCLOUD_MAX_PAROLE) return msg.textContent='Puoi scrivere al massimo '+WORDCLOUD_MAX_PAROLE+' parole (ne hai scritte '+np+').';}
     const bad=paroleVietate(text); if(bad.length){msg.style.cssText='color:#b3201f;font-weight:700';return msg.textContent=msgVietate(bad);}
     btn.disabled=true; msg.textContent='Salvataggio in corso (i file grandi richiedono un po\')...';
     let up=[]; try{up=await uploadFiles(files,today);}catch(e){btn.disabled=false;return msg.textContent=e.message;}
@@ -639,7 +708,7 @@ async function giornataView(){
     if(!data) return box.innerHTML='<p class="mut">Per questo giorno non c\'è ancora una sfida.</p>';
     box.innerHTML=`<p><b>🎁 ${esc(data.title)}</b></p>
     <label class="ck2"><input type="checkbox" id="ga" ${data.anonima?'checked':''}><span>🎭 Risposte anonime (gli utenti vedono un avviso quando si apre la sfida)</span></label>
-    <label class="ck2"><input type="checkbox" id="gm" ${data.mentimer?'checked':''}><span>☁️ Modalità Mentimer (le parole diventano una nuvola)</span></label>
+    <label class="ck2"><input type="checkbox" id="gm" ${data.mentimer?'checked':''}><span>☁️ Modalità Word cloud (le parole diventano una nuvola)</span></label>
     <button id="gs">Salva</button><p id="gmsg" class="mut"></p>`;
     $('#gs').onclick=async()=>{
       const r=await sb.from('challenges').update({anonima:$('#ga').checked,mentimer:$('#gm').checked}).eq('day',day).select('day');
@@ -669,21 +738,24 @@ async function moderaView(users){
       ${p.comments.map(c=>`<div style="margin:8px 0;padding:6px 8px;border-radius:8px;background:${filtro&&hit(c.user_id,c.profiles?.branca)?'#fff3c4':'#0000000d'}"><b>${esc(c.profiles?.nickname)}</b>: ${esc(c.text_content)||'<span class="mut">(solo allegati)</span>'}${(c.comment_media||[]).map(m=>mediaHtml(m,urls)).join('')}<br><button class="sec" data-dc="${c.id}" style="width:auto;margin:4px 0 0">🗑️ Elimina commento</button></div>`).join('')}</div>`).join('');
     const rmFiles=async list=>{list=[...new Set(list.filter(Boolean))]; if(list.length) await sb.storage.from('media').remove(list);};
     const fail=()=>alert('Eliminazione non riuscita. Controlla di aver eseguito aggiornamento7.sql su Supabase.');
+    const esito=ok=>{ if(!ok) alert('Elemento eliminato, ma il messaggio all\'utente non è stato salvato. Controlla di aver eseguito aggiornamento9.sql.'); };
     box.querySelectorAll('[data-dp]').forEach(b=>b.onclick=async()=>{
       const p=posts.find(x=>x.id===b.dataset.dp);
-      if(!confirm('Eliminare il post di '+(p.profiles?.nickname||'')+' con tutti i suoi commenti e allegati?')) return;
+      const motivo=await chiediMotivo('post',p.profiles?.nickname||''); if(motivo===null) return;
       b.disabled=true;
       const files=[...(p.post_media||[]).map(m=>m.path),p.media_path,...p.comments.flatMap(c=>(c.comment_media||[]).map(m=>m.path))];
       const {data:del,error:er}=await sb.from('posts').delete().eq('id',p.id).select('id');
       if(er||!del?.length){b.disabled=false;return fail();}
+      esito(await inviaAvviso(p.user_id,'post',p.day,p.text_content||'(solo allegati)',motivo));
       await rmFiles(files); draw();
     });
     box.querySelectorAll('[data-dc]').forEach(b=>b.onclick=async()=>{
-      const c=posts.flatMap(p=>p.comments).find(x=>x.id===b.dataset.dc);
-      if(!confirm('Eliminare il commento di '+(c.profiles?.nickname||'')+'?')) return;
+      const pp=posts.find(x=>x.comments.some(c=>c.id===b.dataset.dc)), c=pp.comments.find(x=>x.id===b.dataset.dc);
+      const motivo=await chiediMotivo('commento',c.profiles?.nickname||''); if(motivo===null) return;
       b.disabled=true;
       const {data:del,error:er}=await sb.from('comments').delete().eq('id',c.id).select('id');
       if(er||!del?.length){b.disabled=false;return fail();}
+      esito(await inviaAvviso(c.user_id,'commento',pp.day,c.text_content||'(solo allegati)',motivo));
       await rmFiles((c.comment_media||[]).map(m=>m.path)); draw();
     });
   };
