@@ -1,30 +1,16 @@
 {
- "name": "Diario dell'Avvento",
- "short_name": "Avvento",
- "start_url": "./",
- "scope": "./",
- "display": "standalone",
- "background_color": "#6e1010",
- "theme_color": "#6e1010",
- "lang": "it",
- "icons": [
-  {
-   "src": "icon-192.png",
-   "sizes": "192x192",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "icon-512.png",
-   "sizes": "512x512",
-   "type": "image/png",
-   "purpose": "any"
-  },
-  {
-   "src": "icon-512.png",
-   "sizes": "512x512",
-   "type": "image/png",
-   "purpose": "maskable"
-  }
- ]
+  "name": "Maranathapp",
+  "short_name": "Maranathapp",
+  "description": "Il calendario dell'Avvento del gruppo",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#6e1010",
+  "theme_color": "#6e1010",
+  "lang": "it",
+  "icons": [
+    { "src": "icon-180.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+  ]
 }
