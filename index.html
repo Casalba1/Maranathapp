@@ -270,7 +270,7 @@ function notificheView(){
   return new Promise(res=>{
     const ok=pushOk();
     const m=document.createElement('div'); m.className='modal';
-    m.innerHTML=`<div class="avv"><div class="hd">🔔 Vuoi le notifiche?</div><div class="bd"><p style="margin-top:0">Ti avviseremo <b>ogni mattina alle 6:00</b>, quando si apre la sfida del giorno, e se un admin ti scrive un messaggio.</p>${ok?'':'<p class="mut">Su iPhone le notifiche funzionano solo dopo aver aggiunto Maranathapp alla schermata Home (Condividi → "Aggiungi alla schermata Home") e aperto l\'app da quell\'icona: potrai attivarle da lì con il pulsante 🔔.</p>'}</div><div class="ft">${ok?'<button id="nsi">Attiva le notifiche 🎁</button><button class="sec" id="nno">Non ora</button>':'<button id="nno">Ho capito</button>'}</div></div>`;
+    m.innerHTML=`<div class="avv"><div class="hd">🔔 Vuoi le notifiche?</div><div class="bd"><p style="margin-top:0">Ti avviseremo <b>ogni mattina alle 7:00</b> per ricordarti la sfida del giorno, e se un admin ti scrive un messaggio.</p>${ok?'':'<p class="mut">Su iPhone le notifiche funzionano solo dopo aver aggiunto Maranathapp alla schermata Home (Condividi → "Aggiungi alla schermata Home") e aperto l\'app da quell\'icona: potrai attivarle da lì con il pulsante 🔔.</p>'}</div><div class="ft">${ok?'<button id="nsi">Attiva le notifiche 🎁</button><button class="sec" id="nno">Non ora</button>':'<button id="nno">Ho capito</button>'}</div></div>`;
     document.body.appendChild(m);
     const fine=()=>{m.remove();res();};
     $('#nno').onclick=fine;
