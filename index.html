@@ -315,7 +315,7 @@ function pattoView(){
   };
 }
 const mail=n=>n.trim().toLowerCase()+'@diario-avvento.app'; // NON cambiare: è il dominio interno con cui sono stati creati gli account esistenti
-const CAPI_MAX=9, NOCAPO='Mi dispiace, non sei un capo!';
+const CAPI_MAX=11, NOCAPO='Mi dispiace, non sei un capo!';
 const capiFull=async()=>{const {data}=await sb.rpc('capi_count');return data>=CAPI_MAX;};
 const OPTS='<option value="">Scegli la branca</option><option value="lupetti">Lupetti/e</option><option value="esploratori">Esploratori/Guide</option><option value="rover">Rover/Scolte</option><option value="capi">Capi</option>';
 function scene(inner){
