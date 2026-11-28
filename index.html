@@ -18,7 +18,8 @@ main{max-width:640px;margin:auto;padding:16px}
 .card{background:var(--card);color:#2b2b2b;border-radius:14px;padding:16px;margin:12px 0;box-shadow:0 1px 4px #0002}
 input,select,textarea,button{font:inherit;width:100%;padding:10px;margin:6px 0;border-radius:8px;border:1px solid #8885;background:#fff;color:#2b2b2b}
 button{background:#fff;color:#2b2b2b;font-weight:600;border:1px solid #bfb3a0;box-shadow:0 1px 3px #0003;cursor:pointer}button.sec{background:#8884;color:var(--ink);border:0;box-shadow:none;font-weight:400}
-.row{display:flex;gap:8px}.row>*{width:auto;flex:1}
+.row{display:flex;gap:8px}.row>*{width:auto;flex:1;min-width:0}
+html,body{overflow-x:hidden}
 .mut{color:var(--mut);font-size:.85rem}
 img,video{max-width:100%;border-radius:10px;margin-top:8px}
 .card img,.card video{max-height:75vh;object-fit:contain}
@@ -95,9 +96,12 @@ body::after{background-size:310px 310px;opacity:.85;animation:tw 6s 1.2s ease-in
 .avv .q{color:#6b6254;font-style:italic;font-size:.9rem;margin-top:4px}
 .avv .ft{padding:6px 16px 14px;border-top:2px dashed #c62f2f55;background:#f6ead6}
 /* intestazione */
-.top{align-items:center;gap:8px}
-.top .brand{flex:1;text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.6rem,4.5vmin,2.4rem);letter-spacing:.06em;line-height:1;color:#fff6dc;text-shadow:0 2px 6px #0006}
-.top button{flex:0 0 auto;width:auto;padding:8px 14px;margin:0}
+.top{align-items:center;gap:8px;flex-wrap:wrap}
+.top .brand{flex:1 1 auto;min-width:0;white-space:nowrap;text-align:left;font-family:'Cormorant Garamond',Georgia,serif;font-weight:600;font-size:clamp(1.3rem,5.4vw,2.2rem);letter-spacing:.05em;line-height:1;color:#fff6dc;text-shadow:0 2px 6px #0006}
+.top button{flex:0 0 auto;width:auto;padding:8px 12px;margin:0}
+.top #bell{font-size:1.25rem;line-height:1;padding:7px 11px;border:2px solid #e0b04a;animation:bellp 2s ease-in-out infinite}
+@keyframes bellp{0%,100%{box-shadow:0 0 0 0 #ffe08a00}50%{box-shadow:0 0 10px 3px #ffe08acc}}
+@media(max-width:400px){.top{gap:6px}.top .brand{font-size:1.1rem;letter-spacing:.03em}.top button{padding:7px 9px;font-size:.92rem}.top #bell{font-size:1.1rem;padding:6px 9px}}
 /* countdown di lancio */
 .lc{display:flex;flex-direction:column;align-items:center;gap:6px;margin:2px 0 8px}
 .lc .t{font-size:clamp(.78rem,2vmin,1rem);color:#f3e7c4;letter-spacing:.03em}
@@ -184,11 +188,18 @@ let me, session, challenge, myPost, viewDay=today, adminOpen=false;
 async function init(){
   ({data:{session}}=await sb.auth.getSession());
   if(!session) return loginView();
-  const {data,error}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
-  if(error){ // niente rete / servizio non raggiungibile: non mostro il profilo "da completare" per sbaglio
+  const rip=()=>{ // niente rete / servizio non raggiungibile
     app.innerHTML=scene(`<div class="card"><b>Ops, non riesco a collegarmi.</b><p class="mut">Controlla la connessione e riprova.</p><button id="rt">Riprova</button><button class="sec" id="lo">Esci</button></div>`);
-    $('#rt').onclick=init; $('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload()); return;
+    $('#rt').onclick=init; $('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload());
+  };
+  // controllo che l'account esista ancora (può essere stato eliminato o la sessione può essere scaduta)
+  const {data:ud,error:ue}=await sb.auth.getUser();
+  if(ue||!ud||!ud.user){
+    if(ue&&!(ue.status>=400&&ue.status<500)) return rip();
+    await sb.auth.signOut(); loginView(); $('#msg').textContent='La sessione non è più valida: accedi di nuovo.'; return;
   }
+  const {data,error}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle();
+  if(error) return rip();
   me=data; if(!me) return onboardView(); if(!me.patto_accettato_il) return pattoView(); mainView();
 }
 
@@ -230,6 +241,7 @@ async function abilitaPush(){
   if(perm==='default') perm=await Notification.requestPermission();
   if(perm==='denied') return {ok:false,blocked:true,msg:'Le notifiche sono bloccate per questo sito: riattivale dalle impostazioni del browser o del telefono.'};
   if(perm!=='granted') return {ok:false,msg:'Non hai concesso il permesso per le notifiche.'};
+  try{ const rs=await fetch('sw.js',{cache:'no-store'}); if(!rs.ok) return {ok:false,msg:'Il file sw.js non è stato trovato sul sito (errore '+rs.status+'). Caricalo su GitHub nella stessa cartella di index.html, accanto a manifest.webmanifest.'}; }catch(e){}
   let reg;
   try{ reg=await navigator.serviceWorker.register('sw.js'); await navigator.serviceWorker.ready; }
   catch(e){ return {ok:false,msg:'Il file sw.js non è raggiungibile: caricalo su GitHub nella stessa cartella di index.html. ('+e.message+')'}; }
@@ -238,8 +250,10 @@ async function abilitaPush(){
   catch(e){ return {ok:false,msg:'Il telefono ha rifiutato l\'iscrizione alle notifiche: '+e.message}; }
   const j=sub.toJSON(); const {error}=await sb.rpc('registra_push',{p_endpoint:j.endpoint,p_p256dh:j.keys.p256dh,p_auth:j.keys.auth});
   if(error) return {ok:false,msg:'Salvataggio non riuscito (hai eseguito aggiornamento9.sql su Supabase?): '+error.message};
+  try{ localStorage.setItem('pushReg','1'); }catch(e){}
   return {ok:true};
 }
+const pushRegistrato=()=>{ try{ return localStorage.getItem('pushReg')==='1'; }catch(e){ return false; } };
 const msgNoPush=()=>/Android/i.test(navigator.userAgent)
   ?'Questo browser non permette le notifiche. Apri Maranathapp con Chrome (non dal browser interno di WhatsApp o di altre app) e riprova.'
   :/iPhone|iPad|iPod/i.test(navigator.userAgent)
@@ -331,10 +345,10 @@ function loginView(){
         const bn=paroleVietate(nick); if(bn.length) return msg.textContent='Nickname non consentito: contiene '+bn.map(w=>'«'+w+'»').join(', ')+'. Scegline un altro.';
         if(br==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
         const {data,error}=await sb.auth.signUp({email:mail(nick),password:pw});
-        if(error) return msg.textContent=/registered|exists/i.test(error.message)?'Nickname già usato, scegline un altro.':error.message;
+        if(error) return msg.textContent=/registered|exists/i.test(error.message)?'Nickname già usato: se è il tuo, premi "Ho già un account" ed entra; altrimenti scegline un altro.':error.message;
         if(!data.session) return msg.textContent='Registrazione non completata: su Supabase disattiva "Confirm email".';
         const r=await sb.from('profiles').insert({id:data.user.id,nickname:nick,branca:br});
-        if(r.error) return msg.textContent=r.error.message.includes('capi_limit')?NOCAPO:r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message;
+        if(r.error){ session=data.session; return onboardView(r.error.message.includes('capi_limit')?NOCAPO:r.error.code==='23505'?'Nickname già usato, scegline un altro.':r.error.message); }
       } else {
         const {error}=await sb.auth.signInWithPassword({email:mail(nick),password:pw});
         if(error) return msg.textContent=error.status===429?'Troppi tentativi: aspetta un minuto e riprova.':(error.status&&error.status>=500)?'Il servizio non risponde, riprova tra poco.':OOPS;
@@ -345,17 +359,22 @@ function loginView(){
   };
 }
 
-function onboardView(){
+function onboardView(avviso){
   app.innerHTML=scene(`<div class="card"><h3>Benvenuto! Completa il profilo</h3>
   <input id="nick" placeholder="Nickname" maxlength="20"><select id="br">${OPTS}</select>
-  <button id="ok">Entra</button><p id="msg" class="mut"></p></div>`);
+  <button id="ok">Entra</button><button class="sec" id="lo">Esci e torna al login</button><p id="msg" class="mut"></p></div>`);
+  $('#lo').onclick=()=>sb.auth.signOut().then(()=>location.reload());
+  if(avviso) $('#msg').textContent=avviso;
   $('#ok').onclick=async()=>{
     const nickname=$('#nick').value.trim(), branca=$('#br').value, msg=$('#msg');
     if(!nickname||!branca) return msg.textContent='Compila tutti i campi.';
     const bn=paroleVietate(nickname); if(bn.length) return msg.textContent='Nickname non consentito: contiene '+bn.map(w=>'«'+w+'»').join(', ')+'. Scegline un altro.';
     if(branca==='capi'&&await capiFull()) return msg.textContent=NOCAPO;
     const {error}=await sb.from('profiles').insert({id:session.user.id,nickname,branca});
-    if(error) return msg.textContent=error.message.includes('capi_limit')?NOCAPO:error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
+    if(error){
+      if(error.code==='23503'){ await sb.auth.signOut(); alert('Questo account non esiste più: torna al login o registrati di nuovo.'); return location.reload(); }
+      return msg.textContent=error.message.includes('capi_limit')?NOCAPO:error.code==='23505'?'Nickname già usato, scegline un altro.':error.message;
+    }
     init();
   };
 }
@@ -363,11 +382,11 @@ function onboardView(){
 async function mainView(){
   adminOpen=false;
   controllaAvvisi(); if(!window._avvT) window._avvT=setInterval(controllaAvvisi,30000);
-  if(pushOk()&&Notification.permission==='granted') abilitaPush().catch(()=>{}); // tiene aggiornata l'iscrizione di questo telefono
+  if(pushOk()&&Notification.permission==='granted') abilitaPush().then(r=>{ if(r.ok&&$('#bell')) $('#bell').remove(); }).catch(()=>{}); // tiene aggiornata l'iscrizione di questo telefono
   document.body.classList.remove('calmode'); window.onresize=null; clearInterval(lcTimer);
   const inRange=today>=START&&today<=END;
   app.innerHTML=`<div class="row top"><b class="brand">Maranathapp</b>
-  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}${pushOk()&&permNotif()==='default'?'<button class="sec" id="bell" title="Attiva le notifiche">🔔</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
+  ${me.is_admin?'<button class="sec" id="adm">Admin</button>':''}${pushOk()&&permNotif()!=='denied'&&!pushRegistrato()?'<button class="sec" id="bell" title="Attiva le notifiche" aria-label="Attiva le notifiche">🔔</button>':''}<button class="sec" id="out">Esci</button></div><div id="cd"></div><div id="files"></div><div id="body"></div>`;
   if($('#bell')) $('#bell').onclick=attivaNotifiche;
   $('#out').onclick=()=>sb.auth.signOut().then(()=>location.reload());
   loadMyFiles(); countdown();
